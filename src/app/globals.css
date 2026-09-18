@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    /* Azul fuerte para las acciones principales (contraste AA sobre blanco). */
+    --primary: 221 83% 41%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 94%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 20% 35%;
+
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 42%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 25% 80%;
+    --input: 214 25% 70%;
+    --ring: 221 83% 41%;
+
+    /* Semáforo de inventario */
+    --ok: 142 72% 29%;
+    --ok-foreground: 0 0% 100%;
+    --warn: 38 92% 40%;
+    --warn-foreground: 0 0% 100%;
+    --danger: 0 72% 42%;
+    --danger-foreground: 0 0% 100%;
+
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    /* Tamaños en rem para que el zoom del navegador funcione. */
+    font-size: 100%;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-background text-foreground text-base antialiased;
+    /* Evita el zoom por doble toque accidental en móvil. */
+    touch-action: manipulation;
+  }
+  /* Área táctil cómoda para todo lo interactivo. */
+  button,
+  a,
+  input,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+  /* Foco visible y grande para teclado. */
+  :focus-visible {
+    outline: 3px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+}
