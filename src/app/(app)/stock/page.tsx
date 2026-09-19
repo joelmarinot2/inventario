@@ -25,6 +25,8 @@ export default function StockPage() {
   const [saborSel, setSaborSel] = useState<string | null>(null);
   const [gramajeSel, setGramajeSel] = useState<number | null>(null);
   const [sel, setSel] = useState<Producto | null>(null);
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const [errorFoto, setErrorFoto] = useState<string | null>(null);
 
   const recargar = () =>
     cargarProductos().then(setProductos).catch(() => {});
@@ -53,6 +55,62 @@ export default function StockPage() {
     () => gramajes.find((g) => g.gramaje === gramajeSel)?.items ?? [],
     [gramajes, gramajeSel],
   );
+
+  // Foto del sabor (una por sabor, compartida por todas sus presentaciones).
+  const fotoSabor = itemsSabor.find((p) => p.foto_url)?.foto_url ?? null;
+
+  const subirFotoSabor = async (file: File) => {
+    setSubiendoFoto(true);
+    setErrorFoto(null);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const ruta = `${crypto.randomUUID()}.${ext}`;
+      const { error: e } = await supabase.storage
+        .from("fotos-productos")
+        .upload(ruta, file, { upsert: true });
+      if (e) throw e;
+      const { data } = supabase.storage
+        .from("fotos-productos")
+        .getPublicUrl(ruta);
+      const ids = itemsSabor.map((p) => p.id);
+      const { error: e2 } = await supabase
+        .from("productos")
+        .update({ foto_url: data.publicUrl })
+        .in("id", ids);
+      if (e2) throw e2;
+      recargar();
+    } catch (e) {
+      const msg = (e as { message?: string })?.message;
+      setErrorFoto(
+        msg ? `No se pudo subir la foto: ${msg}` : "No se pudo subir la foto.",
+      );
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
+
+  const quitarFotoSabor = async () => {
+    setSubiendoFoto(true);
+    setErrorFoto(null);
+    try {
+      const supabase = createClient();
+      const ids = itemsSabor.map((p) => p.id);
+      const { error } = await supabase
+        .from("productos")
+        .update({ foto_url: null })
+        .in("id", ids);
+      if (error) throw error;
+      recargar();
+    } catch (e) {
+      const msg = (e as { message?: string })?.message;
+      setErrorFoto(
+        msg ? `No se pudo quitar la foto: ${msg}` : "No se pudo quitar la foto.",
+      );
+    } finally {
+      setSubiendoFoto(false);
+    }
+  };
 
   // ---- Editor ----
   if (sel) {
@@ -125,6 +183,51 @@ export default function StockPage() {
           Elegir otro sabor
         </BotonVolver>
         <h1 className="text-2xl font-extrabold">{saborSel}</h1>
+
+        {esAdmin && (
+          <div className="flex items-center gap-4 rounded-xl border-2 bg-card p-4">
+            <FotoProducto
+              url={fotoSabor}
+              nombre={saborSel}
+              tipo="empacado"
+              className="h-24 w-24 shrink-0"
+            />
+            <div className="flex flex-col gap-2">
+              <label className="cursor-pointer text-lg font-semibold text-primary underline">
+                {subiendoFoto ? "Subiendo…" : "Poner / cambiar foto"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) subirFotoSabor(f);
+                  }}
+                />
+              </label>
+              {fotoSabor && (
+                <button
+                  type="button"
+                  onClick={quitarFotoSabor}
+                  disabled={subiendoFoto}
+                  className="text-left text-lg font-semibold text-destructive underline"
+                >
+                  Quitar foto
+                </button>
+              )}
+              <p className="text-base text-muted-foreground">
+                Una foto para todo el sabor.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {errorFoto && (
+          <p role="alert" className="text-lg font-semibold text-destructive">
+            {errorFoto}
+          </p>
+        )}
+
         <p className="text-lg text-muted-foreground">Elige el gramaje:</p>
         <div className="grid grid-cols-2 gap-4">
           {gramajes.map((g) => {
@@ -186,8 +289,6 @@ function EditorStock({
   const [empresa, setEmpresa] = useState(
     producto.precio_costo != null ? String(producto.precio_costo) : "",
   );
-  const [fotoUrl, setFotoUrl] = useState<string | null>(producto.foto_url);
-  const [subiendo, setSubiendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -195,37 +296,6 @@ function EditorStock({
   const num = (s: string) => {
     const n = parseInt(s.replace(/\D/g, ""), 10);
     return Number.isFinite(n) ? n : 0;
-  };
-
-  const subirFoto = async (file: File) => {
-    setSubiendo(true);
-    setError(null);
-    try {
-      const supabase = createClient();
-      const ext = file.name.split(".").pop() ?? "jpg";
-      const ruta = `${crypto.randomUUID()}.${ext}`;
-      const { error: e } = await supabase.storage
-        .from("fotos-productos")
-        .upload(ruta, file, { upsert: true });
-      if (e) throw e;
-      const { data } = supabase.storage
-        .from("fotos-productos")
-        .getPublicUrl(ruta);
-      const url = data.publicUrl;
-      const { error: e2 } = await supabase
-        .from("productos")
-        .update({ foto_url: url })
-        .eq("id", producto.id);
-      if (e2) throw e2;
-      setFotoUrl(url);
-    } catch (e) {
-      const msg = (e as { message?: string })?.message;
-      setError(
-        msg ? `No se pudo subir la foto: ${msg}` : "No se pudo subir la foto.",
-      );
-    } finally {
-      setSubiendo(false);
-    }
   };
 
   const guardar = async () => {
@@ -280,29 +350,6 @@ function EditorStock({
 
       <h1 className="text-2xl font-extrabold">{producto.nombre}</h1>
 
-      {esAdmin && (
-        <div className="flex items-center gap-4">
-          <FotoProducto
-            url={fotoUrl}
-            nombre={producto.nombre}
-            tipo="empacado"
-            className="h-24 w-24 shrink-0"
-          />
-          <label className="cursor-pointer text-lg font-semibold text-primary underline">
-            {subiendo ? "Subiendo…" : "Poner / cambiar foto"}
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) subirFoto(f);
-              }}
-            />
-          </label>
-        </div>
-      )}
-
       {!esAdmin && (
         <p className="rounded-lg bg-warn/10 px-4 py-3 text-lg font-semibold text-warn">
           Solo el administrador puede cambiar el stock y los precios.
@@ -347,7 +394,7 @@ function EditorStock({
           size="lg"
           className="w-full"
           onClick={guardar}
-          disabled={guardando || subiendo}
+          disabled={guardando}
         >
           {guardando ? "Guardando…" : "Guardar"}
         </Button>

@@ -22,6 +22,7 @@ export function GridSabores({
   return (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
       {grupos.map((g) => {
+        const foto = g.items.find((p) => p.foto_url)?.foto_url ?? null;
         const paquetes = g.items.reduce(
           (s, p) => s + Math.max(p.stock_base, 0),
           0,
@@ -33,9 +34,9 @@ export function GridSabores({
             onClick={() => onSelect(g.sabor)}
             className="flex flex-col rounded-xl border-2 border-input bg-card p-3 text-left transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
           >
-            {/* La foto va en el producto (tarro/bolsa), no en el sabor. */}
+            {/* Foto del sabor (una por sabor). */}
             <FotoProducto
-              url={null}
+              url={foto}
               nombre={g.sabor}
               tipo="empacado"
               className="aspect-square w-full"
