@@ -21,7 +21,7 @@ import { formatCOP, sugerenciasEfectivo } from "@/lib/dinero";
 import { estadoInventario, mostrarCantidad } from "@/lib/unidades";
 import { GridSabores } from "@/components/grid-sabores";
 import { BadgeEstado } from "@/components/badge-estado";
-import { FotoProducto } from "@/components/foto-producto";
+import { IconoPresentacion } from "@/components/icono-presentacion";
 import { BotonVolver } from "@/components/boton-volver";
 import { ConfigurarEmpacado } from "@/components/vender/configurar-empacado";
 import { ConfigurarGranel } from "@/components/vender/configurar-granel";
@@ -413,11 +413,9 @@ export default function VenderPage() {
                     {ya}
                   </span>
                 )}
-                <FotoProducto
-                  url={p.foto_url}
-                  nombre={p.nombre}
-                  tipo="empacado"
-                  className="h-24 w-24"
+                <IconoPresentacion
+                  presentacion={p.presentacion}
+                  className="h-20 w-20"
                 />
                 <p className="text-2xl font-extrabold">
                   {etiquetaPresentacion(p) || "Presentación"}

@@ -13,6 +13,7 @@ import type { Producto } from "@/lib/tipos";
 import { formatCOP } from "@/lib/dinero";
 import { GridSabores } from "@/components/grid-sabores";
 import { FotoProducto } from "@/components/foto-producto";
+import { IconoPresentacion } from "@/components/icono-presentacion";
 import { BotonVolver } from "@/components/boton-volver";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -145,11 +146,9 @@ export default function StockPage() {
                 onClick={() => setSel(p)}
                 className="flex w-full items-center gap-3 rounded-xl border-2 bg-card p-4 text-left transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.99]"
               >
-                <FotoProducto
-                  url={p.foto_url}
-                  nombre={p.nombre}
-                  tipo="empacado"
-                  className="h-16 w-16 shrink-0"
+                <IconoPresentacion
+                  presentacion={p.presentacion}
+                  className="h-14 w-14 shrink-0"
                 />
                 <div className="min-w-0 flex-1">
                   <p className="text-xl font-bold leading-tight">
