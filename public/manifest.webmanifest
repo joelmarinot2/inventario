@@ -1,7 +1,7 @@
 {
-  "name": "Inventario y ventas",
-  "short_name": "Inventario",
-  "description": "Control de inventario y ventas diarias del negocio.",
+  "name": "Achirapp",
+  "short_name": "Achirapp",
+  "description": "Inventario y ventas de la fábrica de achiras.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

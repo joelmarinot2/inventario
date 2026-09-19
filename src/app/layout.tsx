@@ -3,17 +3,30 @@ import "./globals.css";
 import { RegistrarSW } from "@/components/registrar-sw";
 
 export const metadata: Metadata = {
-  title: "Inventario y ventas",
-  description: "Control de inventario y ventas diarias del negocio.",
+  metadataBase: new URL("https://achirasapp.vercel.app"),
+  title: "Achirapp",
+  description: "Achirapp — inventario y ventas de la fábrica de achiras.",
+  applicationName: "Achirapp",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Inventario",
+    title: "Achirapp",
   },
   icons: {
     icon: "/icons/icon-192.png",
-    apple: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
+  openGraph: {
+    type: "website",
+    siteName: "Achirapp",
+    title: "Achirapp",
+    description: "Inventario y ventas de la fábrica de achiras.",
+    url: "/",
+    locale: "es_CO",
+    images: [
+      { url: "/icons/icon-512.png", width: 512, height: 512, alt: "Achirapp" },
+    ],
   },
 };
 

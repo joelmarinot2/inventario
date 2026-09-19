@@ -38,7 +38,7 @@ export function BarraSuperior() {
     <header className="sticky top-0 z-40 border-b-2 bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-20 max-w-[900px] items-center justify-between gap-3 px-4">
         {enInicio ? (
-          <span className="text-xl font-extrabold">Inventario</span>
+          <span className="text-xl font-extrabold">Achirapp</span>
         ) : (
           <Link
             href="/"

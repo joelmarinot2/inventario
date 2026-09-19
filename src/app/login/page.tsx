@@ -46,7 +46,7 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center bg-muted px-4 py-10">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-extrabold">Inventario y ventas</h1>
+          <h1 className="text-3xl font-extrabold">Achirapp</h1>
           <p className="mt-2 text-lg text-muted-foreground">
             Entra con tu correo y tu contraseña.
           </p>
