@@ -55,6 +55,10 @@ begin
     return jsonb_build_object('venta_id', v_venta_id, 'total', v_total, 'ya_existia', true);
   end;
 
+  -- La consulta de idempotencia dejó v_total en NULL al no encontrar venta;
+  -- se reinicia en 0 para acumular los subtotales sin envenenar con NULL.
+  v_total := 0;
+
   for v_item in select * from jsonb_array_elements(p_items)
   loop
     select * into v_prod from public.productos
