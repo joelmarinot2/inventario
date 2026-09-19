@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCOP, redondear50 } from "./dinero";
+import { formatCOP, redondear50, sugerenciasEfectivo } from "./dinero";
 
 describe("redondear50", () => {
   it("redondea al múltiplo de $50 más cercano (ejemplo regla 6: 5760 -> 5750)", () => {
@@ -31,5 +31,20 @@ describe("formatCOP", () => {
 
   it("maneja negativos (inventario/ajustes)", () => {
     expect(formatCOP(-2000)).toBe("-$ 2.000");
+  });
+});
+
+describe("sugerenciasEfectivo (atajos de billetes)", () => {
+  it("ejemplo: 46.000 -> pagar con 50.000 o 100.000", () => {
+    expect(sugerenciasEfectivo(46000)).toEqual([50000, 100000]);
+  });
+
+  it("16.000 -> 20.000, 50.000, 100.000", () => {
+    expect(sugerenciasEfectivo(16000)).toEqual([20000, 50000, 100000]);
+  });
+
+  it("montos pequeños y borde", () => {
+    expect(sugerenciasEfectivo(0)).toEqual([]);
+    expect(sugerenciasEfectivo(3500)).toEqual([5000, 10000, 20000, 50000]);
   });
 });

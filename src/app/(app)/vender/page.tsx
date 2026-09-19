@@ -13,7 +13,7 @@ import type {
   MetodoPago,
   Producto,
 } from "@/lib/tipos";
-import { formatCOP } from "@/lib/dinero";
+import { formatCOP, sugerenciasEfectivo } from "@/lib/dinero";
 import { estadoInventario, mostrarCantidad } from "@/lib/unidades";
 import { GridSabores } from "@/components/grid-sabores";
 import { BadgeEstado } from "@/components/badge-estado";
@@ -72,8 +72,15 @@ export default function VenderPage() {
   const agregar = (item: ItemCarrito) => {
     setCarrito((c) => [...c, item]);
     setActual(null);
-    setVista("resumen");
+    // Se queda en las presentaciones del sabor para seguir agregando.
+    setVista(saborActual ? "presentaciones" : "resumen");
   };
+
+  // Cuántas unidades (paquetes) de un producto ya hay en el carrito.
+  const enCarrito = (productoId: string) =>
+    carrito
+      .filter((it) => it.producto.id === productoId)
+      .reduce((s, it) => s + it.cantidad, 0);
 
   const quitar = (claveItem: string) =>
     setCarrito((c) => c.filter((it) => it.clave !== claveItem));
@@ -227,13 +234,32 @@ export default function VenderPage() {
 
             {metodo === "efectivo" && (
               <div className="space-y-2">
-                <Label>¿Con cuánto paga? (opcional)</Label>
+                <Label>¿Con cuánto paga?</Label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecibido(String(total))}
+                    className="min-h-14 flex-1 rounded-full border-2 border-input bg-background px-3 text-lg font-bold transition-colors duration-150 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
+                  >
+                    Pago exacto
+                  </button>
+                  {sugerenciasEfectivo(total).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setRecibido(String(v))}
+                      className="min-h-14 flex-1 rounded-full border-2 border-input bg-background px-3 text-lg font-bold transition-colors duration-150 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
+                    >
+                      {formatCOP(v)}
+                    </button>
+                  ))}
+                </div>
                 <Input
                   type="number"
                   inputMode="numeric"
                   value={recibido}
                   onChange={(e) => setRecibido(e.target.value)}
-                  placeholder="Ej: 20000"
+                  placeholder="O escribe el monto"
                 />
                 {(() => {
                   const rec = parseInt(recibido.replace(/\D/g, ""), 10);
@@ -291,7 +317,7 @@ export default function VenderPage() {
     );
   }
 
-  // ---- Presentaciones del sabor elegido ----
+  // ---- Presentaciones del sabor elegido (carrito por sabor) ----
   if (vista === "presentaciones" && saborActual) {
     return (
       <div className="space-y-5">
@@ -306,19 +332,15 @@ export default function VenderPage() {
           ← Elegir otro sabor
         </button>
 
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-2xl font-extrabold">{saborActual}</h1>
-          {carrito.length > 0 && (
-            <Button size="sm" onClick={() => setVista("resumen")}>
-              Ver venta ({carrito.length})
-            </Button>
-          )}
-        </div>
-        <p className="text-lg text-muted-foreground">Elige la presentación:</p>
+        <h1 className="text-2xl font-extrabold">{saborActual}</h1>
+        <p className="text-lg text-muted-foreground">
+          Toca una presentación para agregarla. Puedes agregar varias.
+        </p>
 
         <div className="grid grid-cols-2 gap-4">
           {presentaciones.map((p) => {
             const estado = estadoInventario(p.stock_base, p.stock_minimo);
+            const ya = enCarrito(p.id);
             return (
               <button
                 key={p.id}
@@ -327,8 +349,13 @@ export default function VenderPage() {
                   setActual(p);
                   setVista("config");
                 }}
-                className="flex flex-col items-center gap-2 rounded-xl border-2 border-input bg-card p-4 text-center transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
+                className="relative flex flex-col items-center gap-2 rounded-xl border-2 border-input bg-card p-4 text-center transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
               >
+                {ya > 0 && (
+                  <span className="absolute right-2 top-2 flex h-9 min-w-9 items-center justify-center rounded-full bg-primary px-2 text-base font-bold text-primary-foreground">
+                    {ya}
+                  </span>
+                )}
                 <p className="text-3xl font-extrabold">{p.gramaje_g} g</p>
                 <p className="text-xl font-extrabold text-primary">
                   {formatCOP(p.precio_paquete ?? 0)}
@@ -341,6 +368,17 @@ export default function VenderPage() {
             );
           })}
         </div>
+
+        {carrito.length > 0 && (
+          <Button
+            size="lg"
+            variant="ok"
+            className="w-full"
+            onClick={() => setVista("resumen")}
+          >
+            Resumen de venta ({carrito.length}) · {formatCOP(total)}
+          </Button>
+        )}
       </div>
     );
   }
