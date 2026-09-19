@@ -336,7 +336,7 @@ as $$
   where not v.anulada
     and (v.fecha at time zone 'America/Bogota')::date = p_fecha
   group by p.id, p.nombre, p.tipo, p.gramaje_g, p.paquetes_por_caja, p.gramos_por_caja, p.stock_base
-  order by valor_vendido desc;
+  order by coalesce(sum(vi.subtotal), 0) desc;
 $$;
 
 -- ----------------------------------------------------------------------------
@@ -378,7 +378,7 @@ begin
     where not v.anulada
       and (v.fecha at time zone 'America/Bogota')::date between p_desde and p_hasta
     group by p.id, p.nombre, p.tipo, p.gramaje_g, p.paquetes_por_caja, p.gramos_por_caja
-    order by valor_vendido desc;
+    order by coalesce(sum(vi.subtotal), 0) desc;
 end;
 $$;
 
