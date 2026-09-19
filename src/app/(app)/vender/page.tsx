@@ -56,6 +56,7 @@ export default function VenderPage() {
   const [recibido, setRecibido] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null);
   const [ventaGuardada, setVentaGuardada] = useState<{
     id: string;
     total: number;
@@ -63,6 +64,8 @@ export default function VenderPage() {
 
   useRefrescar(() => {
     cargarProductos().then(setProductos).catch(() => {});
+    const supabase = createClient();
+    supabase.rpc("caja_abierta").then(({ data }) => setCajaAbierta(!!data));
   });
 
   const grupos = useMemo(() => agruparPorSabor(productos), [productos]);
@@ -181,6 +184,31 @@ export default function VenderPage() {
         ventaId={ventaGuardada.id}
         onNueva={nuevaVenta}
       />
+    );
+  }
+
+  // ---- Sin caja abierta: hay que iniciar el día antes de vender ----
+  if (cajaAbierta === null) {
+    return (
+      <p className="py-16 text-center text-lg text-muted-foreground">
+        Cargando…
+      </p>
+    );
+  }
+  if (!cajaAbierta) {
+    return (
+      <div className="space-y-6 text-center">
+        <h1 className="text-3xl font-extrabold">Primero inicia el día</h1>
+        <p className="text-lg text-muted-foreground">
+          Para vender, primero abre la caja con la base en efectivo.
+        </p>
+        <Button asChild size="lg" variant="ok" className="w-full">
+          <Link href="/caja">Iniciar día</Link>
+        </Button>
+        <Button asChild size="lg" variant="ghost" className="w-full">
+          <Link href="/">Ir a Inicio</Link>
+        </Button>
+      </div>
     );
   }
 
