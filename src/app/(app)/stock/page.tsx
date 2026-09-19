@@ -218,8 +218,11 @@ function EditorStock({
         .eq("id", producto.id);
       if (e2) throw e2;
       setFotoUrl(url);
-    } catch {
-      setError("No se pudo subir la foto.");
+    } catch (e) {
+      const msg = (e as { message?: string })?.message;
+      setError(
+        msg ? `No se pudo subir la foto: ${msg}` : "No se pudo subir la foto.",
+      );
     } finally {
       setSubiendo(false);
     }
