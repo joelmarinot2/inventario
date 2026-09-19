@@ -1,25 +1,46 @@
 "use client";
 
-import { useActionState } from "react";
-import { useFormStatus } from "react-dom";
-import { login, type EstadoLogin } from "./actions";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-const estadoInicial: EstadoLogin = { error: null };
-
-function BotonEntrar() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="lg" className="w-full" disabled={pending}>
-      {pending ? "Entrando…" : "Entrar"}
-    </Button>
-  );
-}
-
 export default function LoginPage() {
-  const [estado, formAction] = useActionState(login, estadoInicial);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") ?? "").trim();
+    const password = String(form.get("password") ?? "");
+
+    if (!email || !password) {
+      setError("Escribe tu correo y tu contraseña.");
+      return;
+    }
+
+    setPending(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { error: e2 } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (e2) {
+        setError("Correo o contraseña incorrectos. Intenta de nuevo.");
+        setPending(false);
+        return;
+      }
+      // Navegación completa: así el servidor ve la sesión recién guardada.
+      window.location.assign("/");
+    } catch {
+      setError("No hay internet o el servidor no responde. Intenta de nuevo.");
+      setPending(false);
+    }
+  };
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-muted px-4 py-10">
@@ -31,7 +52,10 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form action={formAction} className="space-y-5 rounded-xl border-2 bg-card p-6 shadow-sm">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-5 rounded-xl border-2 bg-card p-6 shadow-sm"
+        >
           <div className="space-y-2">
             <Label htmlFor="email">Correo</Label>
             <Input
@@ -56,16 +80,18 @@ export default function LoginPage() {
             />
           </div>
 
-          {estado.error && (
+          {error && (
             <p
               role="alert"
               className="rounded-lg bg-destructive/10 px-4 py-3 text-lg font-semibold text-destructive"
             >
-              {estado.error}
+              {error}
             </p>
           )}
 
-          <BotonEntrar />
+          <Button type="submit" size="lg" className="w-full" disabled={pending}>
+            {pending ? "Entrando…" : "Entrar"}
+          </Button>
         </form>
 
         <p className="mt-6 text-center text-base text-muted-foreground">
