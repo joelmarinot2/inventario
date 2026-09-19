@@ -3,7 +3,7 @@ import "./globals.css";
 import { RegistrarSW } from "@/components/registrar-sw";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://achirasapp.vercel.app"),
+  metadataBase: new URL("https://achiraapp.vercel.app"),
   title: "Achirapp",
   description: "Achirapp — inventario y ventas de la fábrica de achiras.",
   applicationName: "Achirapp",
