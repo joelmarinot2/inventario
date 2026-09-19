@@ -53,14 +53,33 @@ export default function CuantoVendiPage() {
   const [fecha, setFecha] = useState<string>(hoyBogota());
   const [total, setTotal] = useState(0);
   const [numVentas, setNumVentas] = useState(0);
+  const [metodos, setMetodos] = useState({
+    efectivo: 0,
+    transferencia: 0,
+    tarjeta: 0,
+    otro: 0,
+  });
   const [filas, setFilas] = useState<FilaInforme[]>([]);
 
   const cargar = (f: string) => {
     const supabase = createClient();
     supabase.rpc("resumen_dia", { p_fecha: f }).then(({ data }) => {
-      const r = (data ?? {}) as { total?: number; num_ventas?: number };
+      const r = (data ?? {}) as {
+        total?: number;
+        num_ventas?: number;
+        efectivo?: number;
+        transferencia?: number;
+        tarjeta?: number;
+        otro?: number;
+      };
       setTotal(Number(r.total ?? 0));
       setNumVentas(Number(r.num_ventas ?? 0));
+      setMetodos({
+        efectivo: Number(r.efectivo ?? 0),
+        transferencia: Number(r.transferencia ?? 0),
+        tarjeta: Number(r.tarjeta ?? 0),
+        otro: Number(r.otro ?? 0),
+      });
     });
     supabase.rpc("informe_diario", { p_fecha: f }).then(({ data }) => {
       setFilas((data ?? []) as FilaInforme[]);
@@ -77,10 +96,20 @@ export default function CuantoVendiPage() {
   };
 
   const compartirWhatsApp = () => {
+    const lineasPago: string[] = [];
+    if (metodos.efectivo > 0)
+      lineasPago.push(`Efectivo: ${formatCOP(metodos.efectivo)}`);
+    if (metodos.transferencia > 0)
+      lineasPago.push(`Transferencia: ${formatCOP(metodos.transferencia)}`);
+    if (metodos.tarjeta > 0)
+      lineasPago.push(`Tarjeta: ${formatCOP(metodos.tarjeta)}`);
+    if (metodos.otro > 0) lineasPago.push(`Otro: ${formatCOP(metodos.otro)}`);
+
     const lineas = [
       `📋 Ventas del ${fechaLarga(fecha)}`,
       `Total: ${formatCOP(total)}`,
       `Número de ventas: ${numVentas}`,
+      ...lineasPago,
       "",
       ...filas.map(
         (f) => `• ${f.nombre}: ${vendidoTexto(f)} — ${formatCOP(f.valor_vendido)}`,
@@ -127,6 +156,30 @@ export default function CuantoVendiPage() {
           {numVentas} {numVentas === 1 ? "venta" : "ventas"}
         </p>
       </div>
+
+      {total > 0 && (
+        <div className="rounded-xl border-2 bg-card p-4">
+          <p className="mb-2 text-lg font-bold">Por forma de pago</p>
+          <div className="grid grid-cols-2 gap-2 text-lg">
+            <span className="text-muted-foreground">Efectivo</span>
+            <span className="text-right font-bold tabular-nums">
+              {formatCOP(metodos.efectivo)}
+            </span>
+            <span className="text-muted-foreground">Transferencia</span>
+            <span className="text-right font-bold tabular-nums">
+              {formatCOP(metodos.transferencia)}
+            </span>
+            <span className="text-muted-foreground">Tarjeta</span>
+            <span className="text-right font-bold tabular-nums">
+              {formatCOP(metodos.tarjeta)}
+            </span>
+            <span className="text-muted-foreground">Otro</span>
+            <span className="text-right font-bold tabular-nums">
+              {formatCOP(metodos.otro)}
+            </span>
+          </div>
+        </div>
+      )}
 
       {filas.length === 0 ? (
         <p className="py-6 text-center text-lg text-muted-foreground">

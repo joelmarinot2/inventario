@@ -44,6 +44,7 @@ const BOTONES = [
 export default function InicioPage() {
   const [total, setTotal] = useState<number | null>(null);
   const [esAdmin, setEsAdmin] = useState(false);
+  const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null);
   const hoy = hoyBogota();
 
   useRefrescar(() => {
@@ -53,6 +54,9 @@ export default function InicioPage() {
       .then(({ data }) => {
         if (data) setTotal(Number((data as { total: number }).total ?? 0));
       });
+    supabase.rpc("caja_abierta").then(({ data }) => {
+      setCajaAbierta(!!data);
+    });
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
       supabase
@@ -85,6 +89,21 @@ export default function InicioPage() {
           {total === null ? "…" : formatCOP(total)}
         </p>
       </section>
+
+      <Link
+        href="/caja"
+        className={`flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl border-2 border-transparent p-4 text-center text-xl font-extrabold shadow-card transition-transform duration-150 ease-out-strong active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring ${
+          cajaAbierta
+            ? "bg-warn text-warn-foreground"
+            : "bg-ok text-ok-foreground"
+        }`}
+      >
+        {cajaAbierta === null
+          ? "CAJA"
+          : cajaAbierta
+            ? "CERRAR CAJA"
+            : "INICIAR DÍA"}
+      </Link>
 
       <nav className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {botones.map(({ href, titulo, Icono, clase }) => (

@@ -13,6 +13,8 @@ export type TipoMovimiento = "entrada" | "venta" | "anulacion" | "ajuste";
 
 export type MotivoAjuste = "conteo" | "merma" | "dano" | "otro";
 
+export type MetodoPago = "efectivo" | "transferencia" | "tarjeta" | "otro";
+
 export interface Perfil {
   id: string;
   nombre: string;

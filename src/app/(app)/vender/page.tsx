@@ -7,7 +7,12 @@ import { createClient } from "@/lib/supabase/client";
 import { useRefrescar } from "@/hooks/use-refrescar";
 import { cargarProductos } from "@/lib/productos-cliente";
 import { agruparPorSabor } from "@/lib/agrupar";
-import type { ItemCarrito, ItemVentaEntrada, Producto } from "@/lib/tipos";
+import type {
+  ItemCarrito,
+  ItemVentaEntrada,
+  MetodoPago,
+  Producto,
+} from "@/lib/tipos";
 import { formatCOP } from "@/lib/dinero";
 import { estadoInventario, mostrarCantidad } from "@/lib/unidades";
 import { GridSabores } from "@/components/grid-sabores";
@@ -15,6 +20,15 @@ import { BadgeEstado } from "@/components/badge-estado";
 import { ConfigurarEmpacado } from "@/components/vender/configurar-empacado";
 import { ConfigurarGranel } from "@/components/vender/configurar-granel";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
+const METODOS: { valor: MetodoPago; texto: string }[] = [
+  { valor: "efectivo", texto: "Efectivo" },
+  { valor: "transferencia", texto: "Transferencia" },
+  { valor: "tarjeta", texto: "Tarjeta" },
+  { valor: "otro", texto: "Otro" },
+];
 
 type Vista = "sabores" | "presentaciones" | "config" | "resumen" | "guardada";
 
@@ -25,6 +39,8 @@ export default function VenderPage() {
   const [saborActual, setSaborActual] = useState<string | null>(null);
   const [actual, setActual] = useState<Producto | null>(null);
   const [clave, setClave] = useState<string>(() => crypto.randomUUID());
+  const [metodo, setMetodo] = useState<MetodoPago>("efectivo");
+  const [recibido, setRecibido] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ventaGuardada, setVentaGuardada] = useState<{
@@ -73,19 +89,30 @@ export default function VenderPage() {
       cantidad: it.cantidad,
       valor_objetivo: it.valor_objetivo,
     }));
+    const recibidoNum = parseInt(recibido.replace(/\D/g, ""), 10);
     try {
       const supabase = createClient();
       const { data, error: e } = await supabase.rpc("registrar_venta", {
         p_clave: clave,
         p_items: items,
+        p_metodo: metodo,
+        p_recibido:
+          metodo === "efectivo" && Number.isFinite(recibidoNum)
+            ? recibidoNum
+            : null,
       });
       if (e) throw e;
       const r = data as { venta_id: string; total: number };
       setVentaGuardada({ id: r.venta_id, total: Number(r.total) });
       setVista("guardada");
       cargarProductos().then(setProductos).catch(() => {});
-    } catch {
-      setError("No se pudo guardar la venta. Revisa el internet e intenta otra vez.");
+    } catch (e) {
+      const msg = (e as { message?: string })?.message;
+      setError(
+        msg
+          ? `No se pudo guardar: ${msg}`
+          : "No se pudo guardar la venta. Revisa el internet e intenta otra vez.",
+      );
     } finally {
       setGuardando(false);
     }
@@ -94,6 +121,8 @@ export default function VenderPage() {
   const nuevaVenta = () => {
     setCarrito([]);
     setClave(crypto.randomUUID());
+    setMetodo("efectivo");
+    setRecibido("");
     setVentaGuardada(null);
     setError(null);
     setSaborActual(null);
@@ -174,6 +203,63 @@ export default function VenderPage() {
             {formatCOP(total)}
           </p>
         </div>
+
+        {carrito.length > 0 && (
+          <div className="space-y-3">
+            <p className="text-xl font-bold">¿Con qué paga?</p>
+            <div className="grid grid-cols-2 gap-3">
+              {METODOS.map((m) => (
+                <button
+                  key={m.valor}
+                  type="button"
+                  onClick={() => setMetodo(m.valor)}
+                  aria-pressed={metodo === m.valor}
+                  className={`min-h-16 rounded-xl border-2 text-lg font-bold transition-colors duration-150 ease-out-strong ${
+                    metodo === m.valor
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input bg-background hover:bg-accent"
+                  }`}
+                >
+                  {m.texto}
+                </button>
+              ))}
+            </div>
+
+            {metodo === "efectivo" && (
+              <div className="space-y-2">
+                <Label>¿Con cuánto paga? (opcional)</Label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={recibido}
+                  onChange={(e) => setRecibido(e.target.value)}
+                  placeholder="Ej: 20000"
+                />
+                {(() => {
+                  const rec = parseInt(recibido.replace(/\D/g, ""), 10);
+                  if (!Number.isFinite(rec) || rec <= 0) return null;
+                  if (rec >= total) {
+                    return (
+                      <div className="rounded-xl border-2 border-ok bg-ok/10 p-4 text-center">
+                        <p className="text-lg text-muted-foreground">
+                          Devolver
+                        </p>
+                        <p className="text-4xl font-extrabold tabular-nums text-ok">
+                          {formatCOP(rec - total)}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <p className="text-lg font-semibold text-warn">
+                      Falta {formatCOP(total - rec)}
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        )}
 
         {error && (
           <p role="alert" className="text-lg font-semibold text-destructive">
