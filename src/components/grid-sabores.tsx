@@ -44,7 +44,7 @@ export function GridSabores({
               {g.sabor}
             </p>
             <p className="mt-1 text-base text-muted-foreground">
-              {g.items.length} presentaciones · {paquetes} paquetes
+              {paquetes} paquetes
             </p>
           </button>
         );

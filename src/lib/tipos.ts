@@ -5,6 +5,8 @@ export type Rol = "admin" | "vendedor";
 
 export type TipoProducto = "empacado" | "granel";
 
+export type Presentacion = "tarro" | "bolsa";
+
 export type UnidadVenta = "paquete" | "caja" | "gramo";
 
 export type ModoGranel = "peso" | "plata" | "caja";
@@ -39,6 +41,7 @@ export interface Producto {
   // Común
   precio_caja: number | null; // opcional; vacío = se calcula
   precio_costo: number | null; // "valor de la empresa" (costo, referencia interna)
+  presentacion: Presentacion | null; // tarro | bolsa (achiras)
   stock_base: number; // entero en unidad base (puede ser negativo)
   stock_minimo: number; // entero en unidad base
   foto_url: string | null;

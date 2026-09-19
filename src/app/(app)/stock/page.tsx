@@ -4,10 +4,16 @@ import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRefrescar } from "@/hooks/use-refrescar";
 import { cargarProductos } from "@/lib/productos-cliente";
-import { agruparPorSabor } from "@/lib/agrupar";
+import {
+  agruparPorSabor,
+  agruparPorGramaje,
+  etiquetaPresentacion,
+} from "@/lib/agrupar";
 import type { Producto } from "@/lib/tipos";
 import { formatCOP } from "@/lib/dinero";
 import { GridSabores } from "@/components/grid-sabores";
+import { FotoProducto } from "@/components/foto-producto";
+import { BotonVolver } from "@/components/boton-volver";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -17,6 +23,7 @@ export default function StockPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [esAdmin, setEsAdmin] = useState(false);
   const [saborSel, setSaborSel] = useState<string | null>(null);
+  const [gramajeSel, setGramajeSel] = useState<number | null>(null);
   const [sel, setSel] = useState<Producto | null>(null);
 
   const recargar = () =>
@@ -37,12 +44,17 @@ export default function StockPage() {
   });
 
   const grupos = useMemo(() => agruparPorSabor(productos), [productos]);
-  const presentaciones = useMemo(
+  const itemsSabor = useMemo(
     () => grupos.find((g) => g.sabor === saborSel)?.items ?? [],
     [grupos, saborSel],
   );
+  const gramajes = useMemo(() => agruparPorGramaje(itemsSabor), [itemsSabor]);
+  const presentaciones = useMemo(
+    () => gramajes.find((g) => g.gramaje === gramajeSel)?.items ?? [],
+    [gramajes, gramajeSel],
+  );
 
-  // ---- Editor de un producto ----
+  // ---- Editor ----
   if (sel) {
     return (
       <EditorStock
@@ -57,35 +69,33 @@ export default function StockPage() {
     );
   }
 
-  // ---- Presentaciones del sabor elegido ----
-  if (saborSel) {
+  // ---- Presentaciones (tarro/bolsa) ----
+  if (saborSel && gramajeSel != null) {
     return (
       <div className="space-y-5">
-        <button
-          type="button"
-          onClick={() => setSaborSel(null)}
-          className="text-lg font-semibold text-primary underline"
-        >
-          ← Elegir otro sabor
-        </button>
-        <h1 className="text-2xl font-extrabold">{saborSel}</h1>
-        <p className="text-lg text-muted-foreground">
-          {esAdmin
-            ? "Toca una presentación para cargar paquetes y precios."
-            : "Cantidades y precios."}
-        </p>
-
+        <BotonVolver onClick={() => setGramajeSel(null)}>
+          Elegir otro gramaje
+        </BotonVolver>
+        <h1 className="text-2xl font-extrabold">
+          {saborSel} · {gramajeSel} g
+        </h1>
         <ul className="space-y-2">
           {presentaciones.map((p) => (
             <li key={p.id}>
               <button
                 type="button"
                 onClick={() => setSel(p)}
-                className="flex w-full items-center justify-between gap-3 rounded-xl border-2 bg-card p-4 text-left transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.99]"
+                className="flex w-full items-center gap-3 rounded-xl border-2 bg-card p-4 text-left transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.99]"
               >
-                <div className="min-w-0">
+                <FotoProducto
+                  url={p.foto_url}
+                  nombre={p.nombre}
+                  tipo="empacado"
+                  className="h-16 w-16 shrink-0"
+                />
+                <div className="min-w-0 flex-1">
                   <p className="text-xl font-bold leading-tight">
-                    {p.gramaje_g} g
+                    {etiquetaPresentacion(p) || "Presentación"}
                   </p>
                   <p className="text-base text-muted-foreground">
                     Venta: {formatCOP(p.precio_paquete ?? 0)}
@@ -107,6 +117,32 @@ export default function StockPage() {
     );
   }
 
+  // ---- Gramajes ----
+  if (saborSel) {
+    return (
+      <div className="space-y-5">
+        <BotonVolver onClick={() => setSaborSel(null)}>
+          Elegir otro sabor
+        </BotonVolver>
+        <h1 className="text-2xl font-extrabold">{saborSel}</h1>
+        <p className="text-lg text-muted-foreground">Elige el gramaje:</p>
+        <div className="grid grid-cols-2 gap-4">
+          {gramajes.map((g) => (
+            <button
+              key={g.gramaje}
+              type="button"
+              onClick={() => setGramajeSel(g.gramaje)}
+              className="flex flex-col items-center gap-1 rounded-xl border-2 border-input bg-card p-6 text-center transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
+            >
+              <p className="text-4xl font-extrabold">{g.gramaje} g</p>
+              <p className="text-base text-muted-foreground">Tarro y bolsa</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // ---- Sabores ----
   return (
     <div className="space-y-5">
@@ -116,7 +152,13 @@ export default function StockPage() {
           Elige el sabor para ver sus presentaciones.
         </p>
       </div>
-      <GridSabores grupos={grupos} onSelect={setSaborSel} />
+      <GridSabores
+        grupos={grupos}
+        onSelect={(s) => {
+          setSaborSel(s);
+          setGramajeSel(null);
+        }}
+      />
     </div>
   );
 }
@@ -137,6 +179,8 @@ function EditorStock({
   const [empresa, setEmpresa] = useState(
     producto.precio_costo != null ? String(producto.precio_costo) : "",
   );
+  const [fotoUrl, setFotoUrl] = useState<string | null>(producto.foto_url);
+  const [subiendo, setSubiendo] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
@@ -146,12 +190,39 @@ function EditorStock({
     return Number.isFinite(n) ? n : 0;
   };
 
+  const subirFoto = async (file: File) => {
+    setSubiendo(true);
+    setError(null);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const ruta = `${crypto.randomUUID()}.${ext}`;
+      const { error: e } = await supabase.storage
+        .from("fotos-productos")
+        .upload(ruta, file, { upsert: true });
+      if (e) throw e;
+      const { data } = supabase.storage
+        .from("fotos-productos")
+        .getPublicUrl(ruta);
+      const url = data.publicUrl;
+      const { error: e2 } = await supabase
+        .from("productos")
+        .update({ foto_url: url })
+        .eq("id", producto.id);
+      if (e2) throw e2;
+      setFotoUrl(url);
+    } catch {
+      setError("No se pudo subir la foto.");
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
   const guardar = async () => {
     setGuardando(true);
     setError(null);
     try {
       const supabase = createClient();
-
       const { error: e1 } = await supabase
         .from("productos")
         .update({
@@ -171,7 +242,6 @@ function EditorStock({
         });
         if (e2) throw e2;
       }
-
       setOk(true);
     } catch {
       setError(
@@ -196,15 +266,32 @@ function EditorStock({
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={onCancelar}
-        className="text-lg font-semibold text-primary underline"
-      >
-        ← Volver a las presentaciones
-      </button>
+      <BotonVolver onClick={onCancelar}>Volver</BotonVolver>
 
       <h1 className="text-2xl font-extrabold">{producto.nombre}</h1>
+
+      {esAdmin && (
+        <div className="flex items-center gap-4">
+          <FotoProducto
+            url={fotoUrl}
+            nombre={producto.nombre}
+            tipo="empacado"
+            className="h-24 w-24 shrink-0"
+          />
+          <label className="cursor-pointer text-lg font-semibold text-primary underline">
+            {subiendo ? "Subiendo…" : "Poner / cambiar foto"}
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) subirFoto(f);
+              }}
+            />
+          </label>
+        </div>
+      )}
 
       {!esAdmin && (
         <p className="rounded-lg bg-warn/10 px-4 py-3 text-lg font-semibold text-warn">
@@ -250,7 +337,7 @@ function EditorStock({
           size="lg"
           className="w-full"
           onClick={guardar}
-          disabled={guardando}
+          disabled={guardando || subiendo}
         >
           {guardando ? "Guardando…" : "Guardar"}
         </Button>

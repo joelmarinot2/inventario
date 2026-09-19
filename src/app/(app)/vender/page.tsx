@@ -6,7 +6,11 @@ import { Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRefrescar } from "@/hooks/use-refrescar";
 import { cargarProductos } from "@/lib/productos-cliente";
-import { agruparPorSabor } from "@/lib/agrupar";
+import {
+  agruparPorSabor,
+  agruparPorGramaje,
+  etiquetaPresentacion,
+} from "@/lib/agrupar";
 import type {
   ItemCarrito,
   ItemVentaEntrada,
@@ -17,11 +21,21 @@ import { formatCOP, sugerenciasEfectivo } from "@/lib/dinero";
 import { estadoInventario, mostrarCantidad } from "@/lib/unidades";
 import { GridSabores } from "@/components/grid-sabores";
 import { BadgeEstado } from "@/components/badge-estado";
+import { FotoProducto } from "@/components/foto-producto";
+import { BotonVolver } from "@/components/boton-volver";
 import { ConfigurarEmpacado } from "@/components/vender/configurar-empacado";
 import { ConfigurarGranel } from "@/components/vender/configurar-granel";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { CampoDinero } from "@/components/ui/campo-dinero";
+
+type Vista =
+  | "sabores"
+  | "gramajes"
+  | "presentaciones"
+  | "config"
+  | "resumen"
+  | "guardada";
 
 const METODOS: { valor: MetodoPago; texto: string }[] = [
   { valor: "efectivo", texto: "Efectivo" },
@@ -30,13 +44,12 @@ const METODOS: { valor: MetodoPago; texto: string }[] = [
   { valor: "otro", texto: "Otro" },
 ];
 
-type Vista = "sabores" | "presentaciones" | "config" | "resumen" | "guardada";
-
 export default function VenderPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
   const [vista, setVista] = useState<Vista>("sabores");
   const [saborActual, setSaborActual] = useState<string | null>(null);
+  const [gramajeActual, setGramajeActual] = useState<number | null>(null);
   const [actual, setActual] = useState<Producto | null>(null);
   const [clave, setClave] = useState<string>(() => crypto.randomUUID());
   const [metodo, setMetodo] = useState<MetodoPago>("efectivo");
@@ -53,9 +66,17 @@ export default function VenderPage() {
   });
 
   const grupos = useMemo(() => agruparPorSabor(productos), [productos]);
-  const presentaciones = useMemo(
+  const itemsSabor = useMemo(
     () => grupos.find((g) => g.sabor === saborActual)?.items ?? [],
     [grupos, saborActual],
+  );
+  const gramajes = useMemo(
+    () => agruparPorGramaje(itemsSabor),
+    [itemsSabor],
+  );
+  const presentaciones = useMemo(
+    () => gramajes.find((g) => g.gramaje === gramajeActual)?.items ?? [],
+    [gramajes, gramajeActual],
   );
 
   const total = useMemo(
@@ -69,18 +90,21 @@ export default function VenderPage() {
       .filter((it) => it.producto.id === p.id)
       .reduce((s, it) => s + it.cantidad_base, 0);
 
+  const enCarritoProducto = (id: string) =>
+    carrito
+      .filter((it) => it.producto.id === id)
+      .reduce((s, it) => s + it.cantidad, 0);
+
+  const enCarritoGramaje = (g: number) =>
+    carrito
+      .filter((it) => it.producto.gramaje_g === g && saborItem(it) === saborActual)
+      .reduce((s, it) => s + it.cantidad, 0);
+
   const agregar = (item: ItemCarrito) => {
     setCarrito((c) => [...c, item]);
     setActual(null);
-    // Se queda en las presentaciones del sabor para seguir agregando.
-    setVista(saborActual ? "presentaciones" : "resumen");
+    setVista(saborActual ? "gramajes" : "resumen");
   };
-
-  // Cuántas unidades (paquetes) de un producto ya hay en el carrito.
-  const enCarrito = (productoId: string) =>
-    carrito
-      .filter((it) => it.producto.id === productoId)
-      .reduce((s, it) => s + it.cantidad, 0);
 
   const quitar = (claveItem: string) =>
     setCarrito((c) => c.filter((it) => it.clave !== claveItem));
@@ -133,8 +157,21 @@ export default function VenderPage() {
     setVentaGuardada(null);
     setError(null);
     setSaborActual(null);
+    setGramajeActual(null);
     setVista("sabores");
   };
+
+  const BotonResumen = () =>
+    carrito.length > 0 ? (
+      <Button
+        size="lg"
+        variant="ok"
+        className="w-full"
+        onClick={() => setVista("resumen")}
+      >
+        Resumen de venta ({carrito.length}) · {formatCOP(total)}
+      </Button>
+    ) : null;
 
   // ---- Venta guardada ----
   if (vista === "guardada" && ventaGuardada) {
@@ -147,7 +184,7 @@ export default function VenderPage() {
     );
   }
 
-  // ---- Configurar producto (cantidad) ----
+  // ---- Configurar cantidad ----
   if (vista === "config" && actual) {
     const props = {
       producto: actual,
@@ -297,6 +334,7 @@ export default function VenderPage() {
             size="lg"
             onClick={() => {
               setSaborActual(null);
+              setGramajeActual(null);
               setVista("sabores");
             }}
           >
@@ -315,30 +353,23 @@ export default function VenderPage() {
     );
   }
 
-  // ---- Presentaciones del sabor elegido (carrito por sabor) ----
-  if (vista === "presentaciones" && saborActual) {
+  // ---- Presentaciones (tarro / bolsa del gramaje) ----
+  if (vista === "presentaciones" && saborActual && gramajeActual != null) {
     return (
       <div className="space-y-5">
-        <button
-          type="button"
-          onClick={() => {
-            setSaborActual(null);
-            setVista("sabores");
-          }}
-          className="text-lg font-semibold text-primary underline"
-        >
-          ← Elegir otro sabor
-        </button>
+        <BotonVolver onClick={() => setVista("gramajes")}>
+          Elegir otro gramaje
+        </BotonVolver>
 
-        <h1 className="text-2xl font-extrabold">{saborActual}</h1>
-        <p className="text-lg text-muted-foreground">
-          Toca una presentación para agregarla. Puedes agregar varias.
-        </p>
+        <h1 className="text-2xl font-extrabold">
+          {saborActual} · {gramajeActual} g
+        </h1>
+        <p className="text-lg text-muted-foreground">¿Tarro o bolsa?</p>
 
         <div className="grid grid-cols-2 gap-4">
           {presentaciones.map((p) => {
             const estado = estadoInventario(p.stock_base, p.stock_minimo);
-            const ya = enCarrito(p.id);
+            const ya = enCarritoProducto(p.id);
             return (
               <button
                 key={p.id}
@@ -354,7 +385,15 @@ export default function VenderPage() {
                     {ya}
                   </span>
                 )}
-                <p className="text-3xl font-extrabold">{p.gramaje_g} g</p>
+                <FotoProducto
+                  url={p.foto_url}
+                  nombre={p.nombre}
+                  tipo="empacado"
+                  className="h-24 w-24"
+                />
+                <p className="text-2xl font-extrabold">
+                  {etiquetaPresentacion(p) || "Presentación"}
+                </p>
                 <p className="text-xl font-extrabold text-primary">
                   {formatCOP(p.precio_paquete ?? 0)}
                 </p>
@@ -367,28 +406,65 @@ export default function VenderPage() {
           })}
         </div>
 
-        {carrito.length > 0 && (
-          <Button
-            size="lg"
-            variant="ok"
-            className="w-full"
-            onClick={() => setVista("resumen")}
-          >
-            Resumen de venta ({carrito.length}) · {formatCOP(total)}
-          </Button>
-        )}
+        <BotonResumen />
       </div>
     );
   }
 
-  // ---- Sabores (inicio de la venta) ----
+  // ---- Gramajes del sabor ----
+  if (vista === "gramajes" && saborActual) {
+    return (
+      <div className="space-y-5">
+        <BotonVolver
+          onClick={() => {
+            setSaborActual(null);
+            setVista("sabores");
+          }}
+        >
+          Elegir otro sabor
+        </BotonVolver>
+
+        <h1 className="text-2xl font-extrabold">{saborActual}</h1>
+        <p className="text-lg text-muted-foreground">Elige el gramaje:</p>
+
+        <div className="grid grid-cols-2 gap-4">
+          {gramajes.map((g) => {
+            const ya = enCarritoGramaje(g.gramaje);
+            return (
+              <button
+                key={g.gramaje}
+                type="button"
+                onClick={() => {
+                  setGramajeActual(g.gramaje);
+                  setVista("presentaciones");
+                }}
+                className="relative flex flex-col items-center gap-1 rounded-xl border-2 border-input bg-card p-6 text-center transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
+              >
+                {ya > 0 && (
+                  <span className="absolute right-2 top-2 flex h-9 min-w-9 items-center justify-center rounded-full bg-primary px-2 text-base font-bold text-primary-foreground">
+                    {ya}
+                  </span>
+                )}
+                <p className="text-4xl font-extrabold">{g.gramaje} g</p>
+                <p className="text-base text-muted-foreground">Tarro y bolsa</p>
+              </button>
+            );
+          })}
+        </div>
+
+        <BotonResumen />
+      </div>
+    );
+  }
+
+  // ---- Sabores ----
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-extrabold">Vender</h1>
         {carrito.length > 0 && (
           <Button size="sm" onClick={() => setVista("resumen")}>
-            Ver venta ({carrito.length}) · {formatCOP(total)}
+            Ver venta ({carrito.length})
           </Button>
         )}
       </div>
@@ -397,11 +473,17 @@ export default function VenderPage() {
         grupos={grupos}
         onSelect={(s) => {
           setSaborActual(s);
-          setVista("presentaciones");
+          setGramajeActual(null);
+          setVista("gramajes");
         }}
       />
     </div>
   );
+}
+
+// Sabor de un item del carrito (para contar por gramaje dentro de un sabor).
+function saborItem(it: ItemCarrito): string {
+  return it.producto.nombre.replace(/\s*\d+\s*g.*$/i, "").trim();
 }
 
 function VentaGuardada({
