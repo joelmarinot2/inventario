@@ -1,16 +1,21 @@
-# Inventario y ventas de comestibles
+# Achirapp — inventario y ventas de achiras
 
-Aplicación web para controlar el inventario y las ventas diarias de un negocio
-pequeño de comestibles, con productos **empacados** (por gramaje) y **a granel**
-(vendidos pesados). Pensada para usarse a diario desde el celular y el
-computador, con foco total en la facilidad de uso.
+Aplicación web para controlar el inventario, las ventas diarias y la caja de
+una fábrica de achiras. Catálogo fijo: **4 sabores × 4 gramajes (100/200/250/
+500 g) × tarro o bolsa = 32 productos**, contados por unidades. Pensada para
+usarse a diario desde el celular y el computador por una persona mayor, con
+foco total en la facilidad de uso (botones y letra grandes, un paso a la vez).
 
 - **Stack:** Next.js (App Router) + TypeScript, Tailwind CSS + shadcn/ui,
   Supabase (PostgreSQL + Auth + Storage). PWA instalable. Despliegue en Vercel.
 - **Idioma/moneda:** español de Colombia, pesos sin decimales (`$ 12.500`),
   zona horaria `America/Bogota`.
-- El inventario se guarda siempre en **unidad base y entero**: paquetes
-  (empacado) o gramos (granel). Nunca decimales.
+- El inventario se guarda siempre como **entero en unidad base** (unidades =
+  tarros o bolsas). Nunca decimales.
+- Cada día: **Iniciar día** (base en efectivo) → **Vender** → **Cerrar caja**.
+
+> El manual de uso en PDF para la persona que vende se entrega aparte (contiene
+> la dirección y las credenciales de acceso, por eso no va en el repositorio).
 
 ---
 
@@ -45,12 +50,20 @@ nuevos de Supabase esto no es automático).
    - `supabase/migrations/0002_seguridad.sql`
    - `supabase/migrations/0003_funciones.sql`
    - `supabase/migrations/0004_storage.sql`
-   - `supabase/migrations/0005_achiras.sql` (columna "valor de la empresa" y
-     nombres únicos; deja inactivos los productos de ejemplo)
+   - `supabase/migrations/0005_achiras.sql` (columna "valor de la empresa";
+     deja inactivos los productos de ejemplo)
+   - `supabase/migrations/0006_pagos_caja.sql` (método de pago con vuelto,
+     tabla `cajas` y funciones de iniciar/cerrar caja; reaplica los GRANT)
+   - `supabase/migrations/0007_presentacion.sql` (presentación tarro/bolsa)
 3. Ejecuta `supabase/seed.sql` para cargar el catálogo de la fábrica:
-   16 productos = 4 sabores (tradicionales, gourmet, con chocolate, picantes)
-   × 4 presentaciones (100, 200, 250, 500 g), por paquetes. Las cantidades y
-   los precios se cargan luego desde la pantalla **Stock**.
+   32 productos = 4 sabores (tradicionales, gourmet, con chocolate, picantes)
+   × 4 gramajes (100, 200, 250, 500 g) × tarro/bolsa. Es idempotente (solo
+   inserta los que falten). Las cantidades, los precios y la foto de cada sabor
+   se cargan luego desde la pantalla **Stock**.
+
+> Si el SQL Editor se detiene por un error a mitad de un archivo, todo ese
+> archivo se revierte: corrige y vuelve a ejecutarlo completo. Todos los
+> archivos se pueden ejecutar más de una vez sin duplicar nada.
 
 **Opción B — con la CLI de Supabase:**
 ```bash
@@ -155,24 +168,33 @@ npm run lint        # ESLint
 - **Seguridad:** RLS en todas las tablas; los permisos de admin se validan en
   la base de datos (`public.es_admin()`), no solo en la interfaz. Registro
   público desactivado.
-- **Granel:** por peso el valor se redondea al múltiplo de `$50`; "por plata"
-  calcula los gramos y cobra exactamente la plata digitada.
+- **Método de pago y vuelto:** cada venta guarda si se pagó en efectivo,
+  transferencia, tarjeta u otro; en efectivo se registra cuánto entregó el
+  cliente y la app calcula el vuelto (con atajos de billetes).
+- **Caja:** `abrir_caja` (base en efectivo), `resumen_caja` y `cerrar_caja`
+  resumen las ventas del turno por forma de pago. No se puede vender sin una
+  caja abierta.
+- **Fotos:** una por sabor, en Supabase Storage (bucket público
+  `fotos-productos`; subir/quitar solo admin).
 
 ### Modelo de datos
-`perfiles`, `productos` (con CHECKs por tipo), `ventas` (con
-`clave_idempotencia` única), `venta_items`, `movimientos`, más funciones de
-informe (`informe_diario`, `informe_rango`, `resumen_dia`, `ranking_productos`).
+`perfiles`, `productos` (con CHECKs por tipo, `precio_costo`, `presentacion`),
+`ventas` (con `clave_idempotencia` única, `metodo_pago`, `pago_recibido`),
+`venta_items`, `movimientos`, `cajas`, más funciones de informe
+(`informe_diario`, `informe_rango`, `resumen_dia`, `ranking_productos`).
 Todo el SQL está en `supabase/migrations/` y el seed en `supabase/seed.sql`.
 
 ---
 
 ## 7. Pantallas
 
-**Vendedor:** Inicio (4 botones gigantes), Vender (empacados y granel, con
-teclado numérico, botones rápidos de granel, "por plata" y bulto completo),
-Llegó mercancía, ¿Qué me queda? (semáforo) y ¿Cuánto vendí? (con envío por
-WhatsApp).
+**Vendedor:** Inicio (botones gigantes), Iniciar día / Cerrar caja, Vender
+(sabor → gramaje → tarro/bolsa → cantidad → cobro con forma de pago y vuelto;
+Deshacer la última venta), Llegó mercancía, ¿Qué me queda? (semáforo) y
+¿Cuánto vendí? (por forma de pago, con envío por WhatsApp).
 
-**Administrador (acceso discreto):** productos y precios (con foto), ajuste de
-inventario con motivo, "Por revisar" (negativos), ventas y anulaciones,
-informes por rango de fechas con exportación a Excel/CSV, y usuarios.
+**Administrador:** Stock (cantidades, precio de venta, valor de la empresa y
+foto por sabor) desde Inicio; y en Administración (acceso discreto):
+productos, ajuste de inventario con motivo, "Por revisar" (negativos), ventas
+y anulaciones, informes por rango de fechas con exportación a Excel/CSV, y
+usuarios.

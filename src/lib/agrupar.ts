@@ -47,11 +47,12 @@ export function agruparPorGramaje(items: Producto[]): GrupoGramaje[] {
     if (!mapa.has(k)) mapa.set(k, []);
     mapa.get(k)!.push(p);
   }
+  // Orden fijo: tarro primero, luego bolsa (como se nombra en el negocio).
+  const orden = (p: Producto) =>
+    p.presentacion === "tarro" ? 0 : p.presentacion === "bolsa" ? 1 : 2;
   const grupos = Array.from(mapa.entries()).map(([gramaje, its]) => ({
     gramaje,
-    items: its.sort((a, b) =>
-      (a.presentacion ?? "").localeCompare(b.presentacion ?? ""),
-    ),
+    items: its.sort((a, b) => orden(a) - orden(b)),
   }));
   grupos.sort((a, b) => a.gramaje - b.gramaje);
   return grupos;
