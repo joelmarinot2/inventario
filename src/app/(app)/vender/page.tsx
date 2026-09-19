@@ -20,8 +20,8 @@ import { BadgeEstado } from "@/components/badge-estado";
 import { ConfigurarEmpacado } from "@/components/vender/configurar-empacado";
 import { ConfigurarGranel } from "@/components/vender/configurar-granel";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CampoDinero } from "@/components/ui/campo-dinero";
 
 const METODOS: { valor: MetodoPago; texto: string }[] = [
   { valor: "efectivo", texto: "Efectivo" },
@@ -254,11 +254,9 @@ export default function VenderPage() {
                     </button>
                   ))}
                 </div>
-                <Input
-                  type="number"
-                  inputMode="numeric"
+                <CampoDinero
                   value={recibido}
-                  onChange={(e) => setRecibido(e.target.value)}
+                  onChange={setRecibido}
                   placeholder="O escribe el monto"
                 />
                 {(() => {

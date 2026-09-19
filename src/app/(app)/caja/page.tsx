@@ -5,9 +5,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useRefrescar } from "@/hooks/use-refrescar";
 import { formatCOP } from "@/lib/dinero";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { CampoDinero } from "@/components/ui/campo-dinero";
 
 interface ResumenCaja {
   caja_id: string;
@@ -114,13 +114,7 @@ export default function CajaPage() {
 
         <div className="space-y-2">
           <Label>Base en efectivo</Label>
-          <Input
-            type="number"
-            inputMode="numeric"
-            value={base}
-            onChange={(e) => setBase(e.target.value)}
-            placeholder="Ej: 50000"
-          />
+          <CampoDinero value={base} onChange={setBase} placeholder="Ej: 50.000" />
         </div>
 
         {error && (

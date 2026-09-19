@@ -7,6 +7,7 @@ import type { Producto, TipoProducto } from "@/lib/tipos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CampoDinero } from "@/components/ui/campo-dinero";
 import { FotoProducto } from "@/components/foto-producto";
 
 function numOrNull(s: string): number | null {
@@ -199,19 +200,19 @@ export function FormularioProducto({ producto }: { producto?: Producto }) {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Campo label="Gramaje del paquete (g)" value={gramaje} onChange={setGramaje} />
           <Campo label="Paquetes por caja" value={paqCaja} onChange={setPaqCaja} />
-          <Campo label="Precio por paquete ($)" value={precioPaquete} onChange={setPrecioPaquete} />
-          <Campo label="Precio por caja ($, opcional)" value={precioCaja} onChange={setPrecioCaja} />
+          <CampoMoneda label="Precio por paquete" value={precioPaquete} onChange={setPrecioPaquete} />
+          <CampoMoneda label="Precio por caja (opcional)" value={precioCaja} onChange={setPrecioCaja} />
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Campo label="Peso del bulto/caja (g)" value={gramosCaja} onChange={setGramosCaja} />
-          <Campo label="Precio por kilo ($)" value={precioKilo} onChange={setPrecioKilo} />
-          <Campo label="Precio por bulto ($, opcional)" value={precioCaja} onChange={setPrecioCaja} />
+          <CampoMoneda label="Precio por kilo" value={precioKilo} onChange={setPrecioKilo} />
+          <CampoMoneda label="Precio por bulto (opcional)" value={precioCaja} onChange={setPrecioCaja} />
         </div>
       )}
 
-      <Campo
-        label="Valor de la empresa (costo, $, opcional)"
+      <CampoMoneda
+        label="Valor de la empresa (costo, opcional)"
         value={precioCosto}
         onChange={setPrecioCosto}
       />
@@ -286,6 +287,23 @@ function Campo({
         value={value}
         onChange={(e) => onChange(e.target.value)}
       />
+    </div>
+  );
+}
+
+function CampoMoneda({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (s: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <CampoDinero value={value} onChange={onChange} />
     </div>
   );
 }

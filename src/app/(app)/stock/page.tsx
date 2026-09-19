@@ -11,6 +11,7 @@ import { GridSabores } from "@/components/grid-sabores";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { CampoDinero } from "@/components/ui/campo-dinero";
 
 export default function StockPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -224,13 +225,7 @@ function EditorStock({
 
       <div className="space-y-2">
         <Label>Valor del producto final (precio de venta)</Label>
-        <Input
-          type="number"
-          inputMode="numeric"
-          value={final}
-          disabled={!esAdmin}
-          onChange={(e) => setFinal(e.target.value)}
-        />
+        <CampoDinero value={final} onChange={setFinal} disabled={!esAdmin} />
         <p className="text-base text-muted-foreground">
           {formatCOP(num(final))} — es lo que se cobra al vender.
         </p>
@@ -238,13 +233,7 @@ function EditorStock({
 
       <div className="space-y-2">
         <Label>Valor de la empresa (costo, opcional)</Label>
-        <Input
-          type="number"
-          inputMode="numeric"
-          value={empresa}
-          disabled={!esAdmin}
-          onChange={(e) => setEmpresa(e.target.value)}
-        />
+        <CampoDinero value={empresa} onChange={setEmpresa} disabled={!esAdmin} />
         <p className="text-base text-muted-foreground">
           Solo de referencia. No se usa al vender.
         </p>
