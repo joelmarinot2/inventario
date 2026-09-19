@@ -76,6 +76,7 @@ export default function InicioPage() {
           titulo: "STOCK",
           Icono: Warehouse,
           clase: "bg-foreground text-background",
+          span: true,
         },
       ]
     : BOTONES;
@@ -90,9 +91,28 @@ export default function InicioPage() {
         </p>
       </section>
 
+      <nav className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {botones.map((b) => {
+          const span = "span" in b && b.span;
+          const { href, titulo, Icono, clase } = b;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-transparent p-6 text-center text-2xl font-extrabold shadow-card transition-transform duration-150 ease-out-strong hover:-translate-y-0.5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+                span ? "sm:col-span-2" : ""
+              } ${clase}`}
+            >
+              <Icono className="h-16 w-16" aria-hidden />
+              {titulo}
+            </Link>
+          );
+        })}
+      </nav>
+
       <Link
         href="/caja"
-        className={`flex min-h-16 w-full items-center justify-center gap-3 rounded-2xl border-2 border-transparent p-4 text-center text-xl font-extrabold shadow-card transition-transform duration-150 ease-out-strong active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring ${
+        className={`flex min-h-24 w-full items-center justify-center gap-3 rounded-2xl border-2 border-transparent p-4 text-center text-2xl font-extrabold shadow-card transition-transform duration-150 ease-out-strong active:scale-[0.98] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring ${
           cajaAbierta
             ? "bg-warn text-warn-foreground"
             : "bg-ok text-ok-foreground"
@@ -104,19 +124,6 @@ export default function InicioPage() {
             ? "CERRAR CAJA"
             : "INICIAR DÍA"}
       </Link>
-
-      <nav className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {botones.map(({ href, titulo, Icono, clase }) => (
-          <Link
-            key={href}
-            href={href}
-            className={`flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-transparent p-6 text-center text-2xl font-extrabold shadow-card transition-transform duration-150 ease-out-strong hover:-translate-y-0.5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 ${clase}`}
-          >
-            <Icono className="h-16 w-16" aria-hidden />
-            {titulo}
-          </Link>
-        ))}
-      </nav>
     </div>
   );
 }

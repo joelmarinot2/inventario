@@ -50,12 +50,12 @@ describe("mostrarEmpacado", () => {
     expect(mostrarEmpacado(0, 24, 250).principal).toBe("0 paquetes");
   });
 
-  it("sin cajas (paquetes_por_caja = 1): solo paquetes (fábrica de achiras)", () => {
-    // 12 paquetes de 500 g = 6 kg
+  it("sin cajas (paquetes_por_caja = 1): en unidades (fábrica de achiras)", () => {
+    // 12 unidades de 500 g = 6 kg
     const r = mostrarEmpacado(12, 1, 500);
-    expect(r.principal).toBe("12 paquetes");
+    expect(r.principal).toBe("12 unidades");
     expect(r.detalle).toBe("6 kg");
-    expect(mostrarEmpacado(1, 1, 100).principal).toBe("1 paquete");
+    expect(mostrarEmpacado(1, 1, 100).principal).toBe("1 unidad");
   });
 });
 

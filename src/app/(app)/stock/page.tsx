@@ -107,7 +107,7 @@ export default function StockPage() {
                   <p className="text-2xl font-extrabold tabular-nums">
                     {p.stock_base}
                   </p>
-                  <p className="text-base text-muted-foreground">paquetes</p>
+                  <p className="text-base text-muted-foreground">unidades</p>
                 </div>
               </button>
             </li>
@@ -127,17 +127,24 @@ export default function StockPage() {
         <h1 className="text-2xl font-extrabold">{saborSel}</h1>
         <p className="text-lg text-muted-foreground">Elige el gramaje:</p>
         <div className="grid grid-cols-2 gap-4">
-          {gramajes.map((g) => (
-            <button
-              key={g.gramaje}
-              type="button"
-              onClick={() => setGramajeSel(g.gramaje)}
-              className="flex flex-col items-center gap-1 rounded-xl border-2 border-input bg-card p-6 text-center transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
-            >
-              <p className="text-4xl font-extrabold">{g.gramaje} g</p>
-              <p className="text-base text-muted-foreground">Tarro y bolsa</p>
-            </button>
-          ))}
+          {gramajes.map((g) => {
+            const totalUnidades = g.items.reduce(
+              (s, p) => s + p.stock_base,
+              0,
+            );
+            return (
+              <button
+                key={g.gramaje}
+                type="button"
+                onClick={() => setGramajeSel(g.gramaje)}
+                className="flex flex-col items-center gap-1 rounded-xl border-2 border-input bg-card p-6 text-center transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
+              >
+                <p className="text-4xl font-extrabold">{g.gramaje} g</p>
+                <p className="text-xl font-bold">{totalUnidades} unidades</p>
+                <p className="text-base text-muted-foreground">Tarro y bolsa</p>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -300,7 +307,7 @@ function EditorStock({
       )}
 
       <div className="space-y-2">
-        <Label>¿Cuántos paquetes hay?</Label>
+        <Label>¿Cuántas unidades hay?</Label>
         <Input
           type="number"
           inputMode="numeric"

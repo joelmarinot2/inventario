@@ -157,8 +157,8 @@ function EntradaProducto({
       {esEmpacado ? (
         sinCajas ? (
           <div className="space-y-2">
-            <p className="text-xl font-bold">¿Cuántos paquetes llegaron?</p>
-            <PasoCantidad value={sueltos} onChange={setSueltos} sufijo="paquetes" />
+            <p className="text-xl font-bold">¿Cuántas unidades llegaron?</p>
+            <PasoCantidad value={sueltos} onChange={setSueltos} sufijo="unidades" />
           </div>
         ) : (
           <div className="space-y-6">
@@ -208,7 +208,7 @@ function EntradaProducto({
         <p className="text-lg text-muted-foreground">Se va a sumar</p>
         <p className="text-2xl font-extrabold">
           {esEmpacado
-            ? `${es.format(base)} paquetes`
+            ? `${es.format(base)} unidades`
             : `${es.format(base)} g = ${formatGramos(base)}`}
         </p>
       </div>

@@ -5,6 +5,7 @@ import type { ItemCarrito, Producto, UnidadVenta } from "@/lib/tipos";
 import { precioCajaEmpacado } from "@/lib/unidades";
 import { formatCOP } from "@/lib/dinero";
 import { PasoCantidad } from "@/components/paso-cantidad";
+import { BotonVolver } from "@/components/boton-volver";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -49,7 +50,7 @@ export function ConfigurarEmpacado({
     etiqueta:
       unidad === "caja"
         ? `${cantidad} ${cantidad === 1 ? "caja" : "cajas"}`
-        : `${cantidad} ${cantidad === 1 ? "paquete" : "paquetes"}`,
+        : `${cantidad} ${cantidad === 1 ? "unidad" : "unidades"}`,
   });
 
   const intentarAgregar = () => {
@@ -62,13 +63,7 @@ export function ConfigurarEmpacado({
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={onCancelar}
-        className="text-lg font-semibold text-primary underline"
-      >
-        ← Elegir otro producto
-      </button>
+      <BotonVolver onClick={onCancelar}>Volver</BotonVolver>
 
       <h1 className="text-2xl font-extrabold">{producto.nombre}</h1>
 
@@ -76,7 +71,7 @@ export function ConfigurarEmpacado({
         <BotonUnidad
           activo={unidad === "paquete"}
           onClick={() => setUnidad("paquete")}
-          titulo="Paquete"
+          titulo="Unidad"
           precio={formatCOP(precioPaquete)}
         />
         {paqPorCaja > 1 && (
@@ -91,7 +86,7 @@ export function ConfigurarEmpacado({
 
       <div className="space-y-2">
         <p className="text-center text-xl font-bold">
-          ¿Cuántas {unidad === "caja" ? "cajas" : "paquetes"}?
+          ¿Cuántas {unidad === "caja" ? "cajas" : "unidades"}?
         </p>
         <PasoCantidad value={cantidad} onChange={setCantidad} min={1} />
         {unidad === "caja" && (
@@ -117,7 +112,7 @@ export function ConfigurarEmpacado({
           <DialogHeader>
             <DialogTitle>¿Vender de todas formas?</DialogTitle>
             <DialogDescription>
-              Según la app solo quedan {Math.max(stockDisponible, 0)} paquetes
+              Según la app solo quedan {Math.max(stockDisponible, 0)} unidades
               de {producto.nombre}.
             </DialogDescription>
           </DialogHeader>

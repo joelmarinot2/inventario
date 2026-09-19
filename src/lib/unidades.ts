@@ -58,11 +58,11 @@ export function mostrarEmpacado(
   const abs = Math.abs(stockPaquetes);
   const totalGramos = abs * gramajeG;
 
-  // Sin cajas (paquetes sueltos): se muestra solo en paquetes.
+  // Sin cajas (unidades sueltas: cada tarro/bolsa es una unidad).
   if (paquetesPorCaja <= 1) {
     const principalSolo = negativo
-      ? `-${plural(abs, "paquete", "paquetes")}`
-      : plural(abs, "paquete", "paquetes");
+      ? `-${plural(abs, "unidad", "unidades")}`
+      : plural(abs, "unidad", "unidades");
     return {
       principal: principalSolo,
       detalle: formatGramos(negativo ? -totalGramos : totalGramos),

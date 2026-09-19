@@ -430,6 +430,10 @@ export default function VenderPage() {
         <div className="grid grid-cols-2 gap-4">
           {gramajes.map((g) => {
             const ya = enCarritoGramaje(g.gramaje);
+            const totalU = g.items.reduce(
+              (s, p) => s + Math.max(p.stock_base, 0),
+              0,
+            );
             return (
               <button
                 key={g.gramaje}
@@ -446,6 +450,7 @@ export default function VenderPage() {
                   </span>
                 )}
                 <p className="text-4xl font-extrabold">{g.gramaje} g</p>
+                <p className="text-lg font-bold">{totalU} unidades</p>
                 <p className="text-base text-muted-foreground">Tarro y bolsa</p>
               </button>
             );
