@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient as createAdminClient } from "@supabase/supabase-js";
-import { getPerfil } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 export type EstadoUsuario = { error: string | null; ok: string | null };
 
@@ -12,8 +12,12 @@ export async function crearUsuario(
   _prev: EstadoUsuario,
   formData: FormData,
 ): Promise<EstadoUsuario> {
-  const perfil = await getPerfil();
-  if (!perfil || perfil.rol !== "admin") {
+  // La sesión sí se valida en el servidor.
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return { error: "No tienes permiso.", ok: null };
   }
 
@@ -43,6 +47,16 @@ export async function crearUsuario(
     serviceKey,
     { auth: { autoRefreshToken: false, persistSession: false } },
   );
+
+  // Verificar que quien llama sea admin, usando el service role (evita RLS).
+  const { data: perfil } = await admin
+    .from("perfiles")
+    .select("rol")
+    .eq("id", user.id)
+    .single();
+  if (perfil?.rol !== "admin") {
+    return { error: "No tienes permiso.", ok: null };
+  }
 
   const { error } = await admin.auth.admin.createUser({
     email,

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, LogOut, Settings } from "lucide-react";
@@ -7,10 +8,25 @@ import { createClient } from "@/lib/supabase/client";
 import type { Rol } from "@/lib/tipos";
 
 // Barra superior fija: el botón "Inicio" está siempre visible. El acceso a
-// administración es discreto y solo aparece para el admin.
-export function BarraSuperior({ rol }: { rol: Rol }) {
+// administración es discreto y solo aparece para el admin. El rol se consulta
+// desde el navegador, donde la identidad del usuario viaja con la consulta.
+export function BarraSuperior() {
   const pathname = usePathname();
   const enInicio = pathname === "/";
+  const [rol, setRol] = useState<Rol | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("perfiles")
+        .select("rol")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => setRol(((data?.rol as Rol) ?? "vendedor")));
+    });
+  }, []);
 
   const salir = async () => {
     const supabase = createClient();
