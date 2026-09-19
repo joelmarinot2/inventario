@@ -81,6 +81,7 @@ function EntradaProducto({
   } | null>(null);
 
   const esEmpacado = producto.tipo === "empacado";
+  const sinCajas = (producto.paquetes_por_caja ?? 1) <= 1;
   const gramosNum = parseInt(gramos || "0", 10);
 
   const base = esEmpacado
@@ -154,24 +155,31 @@ function EntradaProducto({
       <h1 className="text-2xl font-extrabold">{producto.nombre}</h1>
 
       {esEmpacado ? (
-        <div className="space-y-6">
+        sinCajas ? (
           <div className="space-y-2">
-            <p className="text-xl font-bold">¿Cuántas cajas llegaron?</p>
-            <PasoCantidad value={cajas} onChange={setCajas} sufijo="cajas" />
-            <p className="text-center text-base text-muted-foreground">
-              Cada caja trae {producto.paquetes_por_caja} paquetes
-            </p>
+            <p className="text-xl font-bold">¿Cuántos paquetes llegaron?</p>
+            <PasoCantidad value={sueltos} onChange={setSueltos} sufijo="paquetes" />
           </div>
-          <div className="space-y-2">
-            <p className="text-xl font-bold">¿Y cuántos paquetes sueltos?</p>
-            <PasoCantidad
-              value={sueltos}
-              onChange={setSueltos}
-              max={(producto.paquetes_por_caja ?? 1) - 1 || 999}
-              sufijo="paquetes"
-            />
+        ) : (
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <p className="text-xl font-bold">¿Cuántas cajas llegaron?</p>
+              <PasoCantidad value={cajas} onChange={setCajas} sufijo="cajas" />
+              <p className="text-center text-base text-muted-foreground">
+                Cada caja trae {producto.paquetes_por_caja} paquetes
+              </p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-xl font-bold">¿Y cuántos paquetes sueltos?</p>
+              <PasoCantidad
+                value={sueltos}
+                onChange={setSueltos}
+                max={(producto.paquetes_por_caja ?? 1) - 1 || 999}
+                sufijo="paquetes"
+              />
+            </div>
           </div>
-        </div>
+        )
       ) : (
         <div className="space-y-6">
           <div className="space-y-2">

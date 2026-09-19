@@ -36,6 +36,7 @@ export interface Producto {
 
   // Común
   precio_caja: number | null; // opcional; vacío = se calcula
+  precio_costo: number | null; // "valor de la empresa" (costo, referencia interna)
   stock_base: number; // entero en unidad base (puede ser negativo)
   stock_minimo: number; // entero en unidad base
   foto_url: string | null;

@@ -36,6 +36,9 @@ export function FormularioProducto({ producto }: { producto?: Producto }) {
   const [precioCaja, setPrecioCaja] = useState(
     String(producto?.precio_caja ?? ""),
   );
+  const [precioCosto, setPrecioCosto] = useState(
+    String(producto?.precio_costo ?? ""),
+  );
   const [stockMinimo, setStockMinimo] = useState(
     String(producto?.stock_minimo ?? "0"),
   );
@@ -82,6 +85,7 @@ export function FormularioProducto({ producto }: { producto?: Producto }) {
       nombre: nombre.trim(),
       tipo,
       precio_caja: numOrNull(precioCaja),
+      precio_costo: numOrNull(precioCosto),
       stock_minimo: numOrNull(stockMinimo) ?? 0,
       foto_url: fotoUrl,
       activo,
@@ -205,6 +209,12 @@ export function FormularioProducto({ producto }: { producto?: Producto }) {
           <Campo label="Precio por bulto ($, opcional)" value={precioCaja} onChange={setPrecioCaja} />
         </div>
       )}
+
+      <Campo
+        label="Valor de la empresa (costo, $, opcional)"
+        value={precioCosto}
+        onChange={setPrecioCosto}
+      />
 
       <Campo
         label={`Avisar cuando queden menos de (${unidadBase})`}

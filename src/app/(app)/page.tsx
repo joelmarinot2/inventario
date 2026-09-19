@@ -7,6 +7,7 @@ import {
   PackagePlus,
   Boxes,
   BarChart3,
+  Warehouse,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRefrescar } from "@/hooks/use-refrescar";
@@ -42,6 +43,7 @@ const BOTONES = [
 
 export default function InicioPage() {
   const [total, setTotal] = useState<number | null>(null);
+  const [esAdmin, setEsAdmin] = useState(false);
   const hoy = hoyBogota();
 
   useRefrescar(() => {
@@ -51,7 +53,28 @@ export default function InicioPage() {
       .then(({ data }) => {
         if (data) setTotal(Number((data as { total: number }).total ?? 0));
       });
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      supabase
+        .from("perfiles")
+        .select("rol")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => setEsAdmin(data?.rol === "admin"));
+    });
   });
+
+  const botones = esAdmin
+    ? [
+        ...BOTONES,
+        {
+          href: "/stock",
+          titulo: "STOCK",
+          Icono: Warehouse,
+          clase: "bg-foreground text-background",
+        },
+      ]
+    : BOTONES;
 
   return (
     <div className="space-y-6">
@@ -64,7 +87,7 @@ export default function InicioPage() {
       </section>
 
       <nav className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {BOTONES.map(({ href, titulo, Icono, clase }) => (
+        {botones.map(({ href, titulo, Icono, clase }) => (
           <Link
             key={href}
             href={href}

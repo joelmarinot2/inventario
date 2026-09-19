@@ -49,6 +49,14 @@ describe("mostrarEmpacado", () => {
     expect(mostrarEmpacado(1, 24, 250).principal).toBe("1 paquete");
     expect(mostrarEmpacado(0, 24, 250).principal).toBe("0 paquetes");
   });
+
+  it("sin cajas (paquetes_por_caja = 1): solo paquetes (fábrica de achiras)", () => {
+    // 12 paquetes de 500 g = 6 kg
+    const r = mostrarEmpacado(12, 1, 500);
+    expect(r.principal).toBe("12 paquetes");
+    expect(r.detalle).toBe("6 kg");
+    expect(mostrarEmpacado(1, 1, 100).principal).toBe("1 paquete");
+  });
 });
 
 describe("mostrarGranel", () => {
@@ -104,6 +112,7 @@ const empacado: Producto = {
   gramos_por_caja: null,
   precio_kilo: null,
   precio_caja: null,
+  precio_costo: null,
   stock_base: 82,
   stock_minimo: 12,
   foto_url: null,
@@ -121,6 +130,7 @@ const granel: Producto = {
   gramos_por_caja: 25000,
   precio_kilo: 18000,
   precio_caja: null,
+  precio_costo: null,
   stock_base: 53500,
   stock_minimo: 5000,
   foto_url: null,

@@ -45,8 +45,12 @@ nuevos de Supabase esto no es automático).
    - `supabase/migrations/0002_seguridad.sql`
    - `supabase/migrations/0003_funciones.sql`
    - `supabase/migrations/0004_storage.sql`
-3. (Opcional, datos de ejemplo) Ejecuta `supabase/seed.sql` para cargar 8
-   productos (5 empacados y 3 a granel).
+   - `supabase/migrations/0005_achiras.sql` (columna "valor de la empresa" y
+     nombres únicos; deja inactivos los productos de ejemplo)
+3. Ejecuta `supabase/seed.sql` para cargar el catálogo de la fábrica:
+   16 productos = 4 sabores (tradicionales, gourmet, con chocolate, picantes)
+   × 4 presentaciones (100, 200, 250, 500 g), por paquetes. Las cantidades y
+   los precios se cargan luego desde la pantalla **Stock**.
 
 **Opción B — con la CLI de Supabase:**
 ```bash

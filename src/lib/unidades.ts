@@ -56,8 +56,21 @@ export function mostrarEmpacado(
 ): CantidadMostrada {
   const negativo = stockPaquetes < 0;
   const abs = Math.abs(stockPaquetes);
-  const cajas = paquetesPorCaja > 0 ? Math.floor(abs / paquetesPorCaja) : 0;
-  const sueltos = paquetesPorCaja > 0 ? abs % paquetesPorCaja : abs;
+  const totalGramos = abs * gramajeG;
+
+  // Sin cajas (paquetes sueltos): se muestra solo en paquetes.
+  if (paquetesPorCaja <= 1) {
+    const principalSolo = negativo
+      ? `-${plural(abs, "paquete", "paquetes")}`
+      : plural(abs, "paquete", "paquetes");
+    return {
+      principal: principalSolo,
+      detalle: formatGramos(negativo ? -totalGramos : totalGramos),
+    };
+  }
+
+  const cajas = Math.floor(abs / paquetesPorCaja);
+  const sueltos = abs % paquetesPorCaja;
 
   let principal: string;
   if (cajas > 0 && sueltos > 0) {
@@ -69,7 +82,6 @@ export function mostrarEmpacado(
   }
   if (negativo) principal = `-${principal}`;
 
-  const totalGramos = abs * gramajeG;
   const detalle = `${plural(abs, "paquete", "paquetes")} · ${formatGramos(negativo ? -totalGramos : totalGramos)}`;
 
   return { principal, detalle };
