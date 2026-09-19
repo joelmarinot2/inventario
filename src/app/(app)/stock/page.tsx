@@ -4,18 +4,18 @@ import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRefrescar } from "@/hooks/use-refrescar";
 import { cargarProductos } from "@/lib/productos-cliente";
+import { agruparPorSabor } from "@/lib/agrupar";
 import type { Producto } from "@/lib/tipos";
 import { formatCOP } from "@/lib/dinero";
+import { GridSabores } from "@/components/grid-sabores";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-// Nombre del sabor sin la presentación (para agrupar).
-const sabor = (nombre: string) => nombre.replace(/\s*\d+\s*g\s*$/i, "").trim();
-
 export default function StockPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [esAdmin, setEsAdmin] = useState(false);
+  const [saborSel, setSaborSel] = useState<string | null>(null);
   const [sel, setSel] = useState<Producto | null>(null);
 
   const recargar = () =>
@@ -35,19 +35,13 @@ export default function StockPage() {
     });
   });
 
-  const grupos = useMemo(() => {
-    const mapa = new Map<string, Producto[]>();
-    for (const p of productos) {
-      const k = sabor(p.nombre);
-      if (!mapa.has(k)) mapa.set(k, []);
-      mapa.get(k)!.push(p);
-    }
-    for (const arr of mapa.values()) {
-      arr.sort((a, b) => (a.gramaje_g ?? 0) - (b.gramaje_g ?? 0));
-    }
-    return Array.from(mapa.entries());
-  }, [productos]);
+  const grupos = useMemo(() => agruparPorSabor(productos), [productos]);
+  const presentaciones = useMemo(
+    () => grupos.find((g) => g.sabor === saborSel)?.items ?? [],
+    [grupos, saborSel],
+  );
 
+  // ---- Editor de un producto ----
   if (sel) {
     return (
       <EditorStock
@@ -62,54 +56,66 @@ export default function StockPage() {
     );
   }
 
+  // ---- Presentaciones del sabor elegido ----
+  if (saborSel) {
+    return (
+      <div className="space-y-5">
+        <button
+          type="button"
+          onClick={() => setSaborSel(null)}
+          className="text-lg font-semibold text-primary underline"
+        >
+          ← Elegir otro sabor
+        </button>
+        <h1 className="text-2xl font-extrabold">{saborSel}</h1>
+        <p className="text-lg text-muted-foreground">
+          {esAdmin
+            ? "Toca una presentación para cargar paquetes y precios."
+            : "Cantidades y precios."}
+        </p>
+
+        <ul className="space-y-2">
+          {presentaciones.map((p) => (
+            <li key={p.id}>
+              <button
+                type="button"
+                onClick={() => setSel(p)}
+                className="flex w-full items-center justify-between gap-3 rounded-xl border-2 bg-card p-4 text-left transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.99]"
+              >
+                <div className="min-w-0">
+                  <p className="text-xl font-bold leading-tight">
+                    {p.gramaje_g} g
+                  </p>
+                  <p className="text-base text-muted-foreground">
+                    Venta: {formatCOP(p.precio_paquete ?? 0)}
+                    {p.precio_costo != null &&
+                      ` · Costo: ${formatCOP(p.precio_costo)}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-extrabold tabular-nums">
+                    {p.stock_base}
+                  </p>
+                  <p className="text-base text-muted-foreground">paquetes</p>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
+
+  // ---- Sabores ----
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <h1 className="text-3xl font-extrabold">Stock</h1>
         <p className="text-lg text-muted-foreground">
-          {esAdmin
-            ? "Toca un producto para cargar cuántos paquetes hay y sus precios."
-            : "Cantidades y precios de cada producto."}
+          Elige el sabor para ver sus presentaciones.
         </p>
       </div>
-
-      {grupos.map(([nombreSabor, items]) => (
-        <section key={nombreSabor} className="space-y-3">
-          <h2 className="text-xl font-bold">{nombreSabor}</h2>
-          <ul className="space-y-2">
-            {items.map((p) => (
-              <li key={p.id}>
-                <button
-                  type="button"
-                  onClick={() => setSel(p)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border-2 bg-card p-4 text-left transition-[transform,border-color] duration-150 ease-out-strong hover:border-primary/40 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.99]"
-                >
-                  <div className="min-w-0">
-                    <p className="text-lg font-bold leading-tight">
-                      {p.gramaje_g} g
-                    </p>
-                    <p className="text-base text-muted-foreground">
-                      Venta: {formatCOP(p.precio_paquete ?? 0)}
-                      {p.precio_costo != null &&
-                        ` · Costo: ${formatCOP(p.precio_costo)}`}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-extrabold tabular-nums">
-                      {p.stock_base}
-                    </p>
-                    <p className="text-base text-muted-foreground">paquetes</p>
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ))}
-
-      {grupos.length === 0 && (
-        <p className="text-lg text-muted-foreground">No hay productos.</p>
-      )}
+      <GridSabores grupos={grupos} onSelect={setSaborSel} />
     </div>
   );
 }
@@ -145,7 +151,6 @@ function EditorStock({
     try {
       const supabase = createClient();
 
-      // 1) Precios (valor final = venta, valor empresa = costo).
       const { error: e1 } = await supabase
         .from("productos")
         .update({
@@ -155,7 +160,6 @@ function EditorStock({
         .eq("id", producto.id);
       if (e1) throw e1;
 
-      // 2) Cantidad: si cambió, se ajusta el inventario (queda registrado).
       const nuevo = num(cantidad);
       if (nuevo !== producto.stock_base) {
         const { error: e2 } = await supabase.rpc("ajustar_inventario", {
@@ -183,7 +187,7 @@ function EditorStock({
         <p className="text-2xl font-extrabold text-ok">✔ Guardado</p>
         <p className="text-xl font-bold">{producto.nombre}</p>
         <Button size="lg" className="w-full" onClick={onListo}>
-          Seguir con otro producto
+          Seguir con otra presentación
         </Button>
       </div>
     );
@@ -196,7 +200,7 @@ function EditorStock({
         onClick={onCancelar}
         className="text-lg font-semibold text-primary underline"
       >
-        ← Volver a la lista
+        ← Volver a las presentaciones
       </button>
 
       <h1 className="text-2xl font-extrabold">{producto.nombre}</h1>

@@ -26,6 +26,12 @@ export function GridProductos({
 }) {
   const [filtro, setFiltro] = useState<Filtro>("todos");
 
+  // Solo tiene sentido mostrar los filtros de tipo si hay de los dos tipos.
+  const mostrarFiltros = useMemo(
+    () => new Set(productos.map((p) => p.tipo)).size > 1,
+    [productos],
+  );
+
   const lista = useMemo(() => {
     const filtrados = productos.filter(
       (p) => filtro === "todos" || p.tipo === filtro,
@@ -56,11 +62,13 @@ export function GridProductos({
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3">
-        <BotonFiltro valor="todos" texto="Todos" />
-        <BotonFiltro valor="empacado" texto="EMPACADOS" />
-        <BotonFiltro valor="granel" texto="A GRANEL" />
-      </div>
+      {mostrarFiltros && (
+        <div className="flex gap-3">
+          <BotonFiltro valor="todos" texto="Todos" />
+          <BotonFiltro valor="empacado" texto="EMPACADOS" />
+          <BotonFiltro valor="granel" texto="A GRANEL" />
+        </div>
+      )}
 
       {lista.length === 0 ? (
         <p className="py-10 text-center text-lg text-muted-foreground">
