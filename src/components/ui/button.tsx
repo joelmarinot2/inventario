@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 // Botones grandes por defecto (mínimo 64px de alto) y siempre con texto.
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-normal rounded-lg font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.99]",
+  "inline-flex items-center justify-center gap-2 whitespace-normal rounded-lg font-semibold ring-offset-background transition-[transform,background-color,border-color,color] duration-150 ease-out-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.97]",
   {
     variants: {
       variant: {

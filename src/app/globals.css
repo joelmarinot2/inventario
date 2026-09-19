@@ -39,6 +39,10 @@
     --danger-foreground: 0 0% 100%;
 
     --radius: 0.75rem;
+
+    /* Curvas de movimiento (estilo Emil Kowalski). */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   }
 }
 
@@ -50,9 +54,17 @@
     /* Tamaños en rem para que el zoom del navegador funcione. */
     font-size: 100%;
     -webkit-text-size-adjust: 100%;
+    /* Fuente del sistema: sin descargas, ya viene afinada (guía de Emil). */
+    font-family:
+      system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+      "Helvetica Neue", Arial, sans-serif;
+    font-optical-sizing: auto;
   }
   body {
     @apply bg-background text-foreground text-base antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     /* Evita el zoom por doble toque accidental en móvil. */
     touch-action: manipulation;
   }

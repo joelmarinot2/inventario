@@ -35,7 +35,7 @@ export function TecladoNumerico({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="flex min-h-20 items-center justify-center rounded-xl border-2 border-input bg-background text-3xl font-bold hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.98]"
+      className="flex min-h-20 items-center justify-center rounded-xl border-2 border-input bg-background text-3xl font-bold transition-[transform,background-color] duration-100 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.96]"
     >
       {children}
     </button>

@@ -68,7 +68,7 @@ export default function InicioPage() {
           <Link
             key={href}
             href={href}
-            className={`flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border-2 p-6 text-center text-2xl font-extrabold shadow-sm transition-transform active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 ${clase}`}
+            className={`flex min-h-40 flex-col items-center justify-center gap-3 rounded-2xl border-2 border-transparent p-6 text-center text-2xl font-extrabold shadow-card transition-transform duration-150 ease-out-strong hover:-translate-y-0.5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-offset-2 ${clase}`}
           >
             <Icono className="h-16 w-16" aria-hidden />
             {titulo}

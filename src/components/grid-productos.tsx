@@ -44,7 +44,7 @@ export function GridProductos({
       type="button"
       onClick={() => setFiltro(valor)}
       aria-pressed={filtro === valor}
-      className={`min-h-16 flex-1 rounded-xl border-2 px-4 text-lg font-bold focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring ${
+      className={`min-h-16 flex-1 rounded-full border-2 px-4 text-lg font-bold transition-colors duration-150 ease-out-strong focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring ${
         filtro === valor
           ? "border-primary bg-primary text-primary-foreground"
           : "border-input bg-background hover:bg-accent"
@@ -76,7 +76,7 @@ export function GridProductos({
                 key={p.id}
                 type="button"
                 onClick={() => onSelect(p)}
-                className="flex flex-col rounded-xl border-2 border-input bg-card p-3 text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.99]"
+                className="flex flex-col rounded-xl border-2 border-input bg-card p-3 text-left transition-[transform,background-color,border-color] duration-150 ease-out-strong hover:border-primary/40 hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.97]"
               >
                 <div className="relative">
                   <FotoProducto

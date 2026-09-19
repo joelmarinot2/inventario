@@ -25,7 +25,7 @@ export function PasoCantidad({
         onClick={() => fijar(value - 1)}
         aria-label="Quitar uno"
         disabled={value <= min}
-        className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-input bg-background hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring disabled:opacity-40"
+        className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-input bg-background transition-[transform,background-color] duration-100 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100"
       >
         <Minus className="h-9 w-9" />
       </button>
@@ -51,7 +51,7 @@ export function PasoCantidad({
         onClick={() => fijar(value + 1)}
         aria-label="Agregar uno"
         disabled={value >= max}
-        className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-input bg-background hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring disabled:opacity-40"
+        className="flex h-20 w-20 items-center justify-center rounded-xl border-2 border-input bg-background transition-[transform,background-color] duration-100 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring active:scale-[0.96] disabled:opacity-40 disabled:active:scale-100"
       >
         <Plus className="h-9 w-9" />
       </button>
