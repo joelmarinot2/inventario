@@ -54,7 +54,8 @@ export default function InicioPage() {
       .then(({ data }) => {
         if (data) setTotal(Number((data as { total: number }).total ?? 0));
       });
-    supabase.rpc("caja_abierta").then(({ data }) => {
+    supabase.rpc("caja_abierta").then(({ data, error }) => {
+      if (error) return; // fallo pasajero de red: no cambiar lo que se ve
       setCajaAbierta(!!data);
     });
     supabase.auth.getUser().then(({ data: { user } }) => {

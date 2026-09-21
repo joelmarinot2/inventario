@@ -123,7 +123,10 @@ export default function StockPage() {
           setSel(null);
           recargar();
         }}
-        onCancelar={() => setSel(null)}
+        onCancelar={() => {
+          setSel(null);
+          recargar();
+        }}
       />
     );
   }
@@ -292,43 +295,58 @@ function EditorStock({
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
 
+  // Dinero: solo dígitos. Cantidad: conserva el signo (el stock puede ser
+  // negativo si se vendió "de todas formas") para no disparar ajustes falsos.
   const num = (s: string) => {
     const n = parseInt(s.replace(/\D/g, ""), 10);
     return Number.isFinite(n) ? n : 0;
+  };
+  const numConSigno = (s: string) => {
+    const n = parseInt(s.trim(), 10);
+    return Number.isFinite(n) ? n : producto.stock_base;
   };
 
   const guardar = async () => {
     setGuardando(true);
     setError(null);
-    try {
-      const supabase = createClient();
-      const { error: e1 } = await supabase
-        .from("productos")
-        .update({
-          precio_paquete: num(final),
-          precio_costo: empresa.trim() === "" ? null : num(empresa),
-        })
-        .eq("id", producto.id);
-      if (e1) throw e1;
+    const supabase = createClient();
 
-      const nuevo = num(cantidad);
-      if (nuevo !== producto.stock_base) {
-        const { error: e2 } = await supabase.rpc("ajustar_inventario", {
-          p_producto: producto.id,
-          p_nuevo_stock: nuevo,
-          p_motivo: "conteo",
-          p_nota: "Ajuste desde Stock",
-        });
-        if (e2) throw e2;
-      }
-      setOk(true);
-    } catch {
+    // 1) Precios
+    const { error: e1 } = await supabase
+      .from("productos")
+      .update({
+        precio_paquete: num(final),
+        precio_costo: empresa.trim() === "" ? null : num(empresa),
+      })
+      .eq("id", producto.id);
+    if (e1) {
       setError(
-        "No se pudo guardar. Revisa que hayas entrado como administrador y el internet.",
+        "No se pudieron guardar los precios. Revisa que hayas entrado como administrador y el internet.",
       );
-    } finally {
       setGuardando(false);
+      return;
     }
+
+    // 2) Cantidad: solo si de verdad cambió (queda registrada como ajuste).
+    const nuevo = numConSigno(cantidad);
+    if (nuevo !== producto.stock_base) {
+      const { error: e2 } = await supabase.rpc("ajustar_inventario", {
+        p_producto: producto.id,
+        p_nuevo_stock: nuevo,
+        p_motivo: "conteo",
+        p_nota: "Ajuste desde Stock",
+      });
+      if (e2) {
+        setError(
+          "Los precios quedaron guardados, pero NO la cantidad. Revisa el internet e intenta de nuevo.",
+        );
+        setGuardando(false);
+        return;
+      }
+    }
+
+    setGuardando(false);
+    setOk(true);
   };
 
   if (ok) {

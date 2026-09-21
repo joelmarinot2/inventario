@@ -132,13 +132,12 @@ export default function CuantoVendiPage() {
       <h1 className="text-3xl font-extrabold">¿Cuánto vendí?</h1>
 
       <div className="flex items-center justify-between gap-2">
-        <Button variant="outline" size="sm" onClick={() => cambiarDia(-1)}>
+        <Button variant="outline" onClick={() => cambiarDia(-1)}>
           <ChevronLeft className="h-6 w-6" /> Día anterior
         </Button>
         <p className="text-center text-lg font-bold">{fechaCorta(fecha)}</p>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => cambiarDia(1)}
           disabled={esHoy(fecha)}
         >

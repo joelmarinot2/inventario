@@ -8,6 +8,14 @@ import { formatCOP } from "@/lib/dinero";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { CampoDinero } from "@/components/ui/campo-dinero";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface ResumenCaja {
   caja_id: string;
@@ -27,17 +35,25 @@ export default function CajaPage() {
   const [base, setBase] = useState("");
   const [procesando, setProcesando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [confirmarCierre, setConfirmarCierre] = useState(false);
   const [cerrada, setCerrada] = useState<ResumenCaja | null>(null);
 
   const cargar = () => {
     const supabase = createClient();
-    supabase.rpc("caja_abierta").then(({ data }) => {
+    supabase.rpc("caja_abierta").then(({ data, error: e }) => {
+      if (e) return; // fallo pasajero: no cambiar lo que se ve
       const hayCaja = !!data;
       setAbierta(hayCaja);
       if (hayCaja) {
-        supabase.rpc("resumen_caja", { p_caja_id: null }).then(({ data: r }) => {
-          setResumen((r as ResumenCaja) ?? null);
-        });
+        supabase
+          .rpc("resumen_caja", { p_caja_id: null })
+          .then(({ data: r, error: e2 }) => {
+            if (e2) return;
+            setResumen((r as ResumenCaja) ?? null);
+          });
+      } else {
+        setResumen(null);
       }
     });
   };
@@ -47,13 +63,19 @@ export default function CajaPage() {
   const iniciarDia = async () => {
     setProcesando(true);
     setError(null);
+    setAviso(null);
     try {
       const supabase = createClient();
       const b = parseInt(base.replace(/\D/g, ""), 10);
-      const { error: e } = await supabase.rpc("abrir_caja", {
+      const { data, error: e } = await supabase.rpc("abrir_caja", {
         p_base: Number.isFinite(b) ? b : 0,
       });
       if (e) throw e;
+      if ((data as { ya_abierta?: boolean })?.ya_abierta) {
+        setAviso(
+          "La caja ya estaba abierta (quizás desde otro equipo). Se usa esa caja.",
+        );
+      }
       setBase("");
       cargar();
     } catch {
@@ -70,6 +92,7 @@ export default function CajaPage() {
       const supabase = createClient();
       const { data, error: e } = await supabase.rpc("cerrar_caja");
       if (e) throw e;
+      setConfirmarCierre(false);
       setCerrada((data as ResumenCaja) ?? null);
       setAbierta(false);
       setResumen(null);
@@ -140,6 +163,11 @@ export default function CajaPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-extrabold">Caja del día</h1>
+      {aviso && (
+        <p className="rounded-lg bg-warn/10 px-4 py-3 text-lg font-semibold text-warn">
+          {aviso}
+        </p>
+      )}
       {resumen && <TarjetaResumen r={resumen} />}
 
       {error && (
@@ -152,11 +180,41 @@ export default function CajaPage() {
         size="lg"
         variant="danger"
         className="w-full"
-        onClick={cerrarCaja}
+        onClick={() => setConfirmarCierre(true)}
         disabled={procesando}
       >
-        {procesando ? "Cerrando…" : "Cerrar caja"}
+        Cerrar caja
       </Button>
+
+      <Dialog open={confirmarCierre} onOpenChange={setConfirmarCierre}>
+        <DialogContent showClose={false}>
+          <DialogHeader>
+            <DialogTitle>¿Cerrar la caja de hoy?</DialogTitle>
+            <DialogDescription>
+              Después de cerrar no se puede vender hasta volver a iniciar el día.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="lg"
+              className="flex-1"
+              onClick={() => setConfirmarCierre(false)}
+            >
+              No, todavía no
+            </Button>
+            <Button
+              variant="danger"
+              size="lg"
+              className="flex-1"
+              onClick={cerrarCaja}
+              disabled={procesando}
+            >
+              {procesando ? "Cerrando…" : "Sí, cerrar caja"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

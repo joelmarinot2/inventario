@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
-// Contador con botones − y + grandes. También se puede teclear el número.
+// Contador con botones − y + grandes. También se puede teclear el número:
+// mientras se escribe se permite dejar el campo vacío; al salir se corrige.
 export function PasoCantidad({
   value,
   onChange,
@@ -17,6 +19,24 @@ export function PasoCantidad({
   sufijo?: string;
 }) {
   const fijar = (n: number) => onChange(Math.max(min, Math.min(max, n)));
+  const [texto, setTexto] = useState(String(value));
+
+  // Si el valor cambia desde afuera (botones − / +), reflejarlo en el campo.
+  useEffect(() => {
+    setTexto(String(value));
+  }, [value]);
+
+  const alEscribir = (s: string) => {
+    const limpio = s.replace(/\D/g, "");
+    setTexto(limpio);
+    if (limpio === "") return; // todavía escribiendo: no forzar el mínimo
+    const n = parseInt(limpio, 10);
+    if (Number.isFinite(n)) fijar(n);
+  };
+
+  const alSalir = () => {
+    if (texto === "") setTexto(String(value));
+  };
 
   return (
     <div className="flex items-stretch justify-center gap-3">
@@ -32,13 +52,12 @@ export function PasoCantidad({
 
       <div className="flex min-w-32 flex-1 items-center justify-center rounded-xl border-2 border-input px-4">
         <input
-          type="number"
+          type="text"
           inputMode="numeric"
-          value={value}
-          min={min}
-          max={max}
-          onChange={(e) => fijar(parseInt(e.target.value || "0", 10))}
-          className="w-full bg-transparent text-center text-4xl font-extrabold tabular-nums focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none"
+          value={texto}
+          onChange={(e) => alEscribir(e.target.value)}
+          onBlur={alSalir}
+          className="w-full bg-transparent text-center text-4xl font-extrabold tabular-nums focus:outline-none"
           aria-label="Cantidad"
         />
         {sufijo && (

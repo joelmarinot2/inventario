@@ -32,21 +32,23 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const esPublica = path === "/login" || path.startsWith("/auth");
+  const esPublica = path === "/login";
+
+  // Al redirigir hay que conservar las cookies (tokens refrescados) que
+  // Supabase puso en supabaseResponse.
+  const redirigir = (pathname: string) => {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname;
+    const res = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((c) => res.cookies.set(c));
+    return res;
+  };
 
   // Sin sesión y en ruta protegida -> al login.
-  if (!user && !esPublica) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
-  }
+  if (!user && !esPublica) return redirigir("/login");
 
   // Con sesión y en el login -> a Inicio.
-  if (user && path === "/login") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
-  }
+  if (user && path === "/login") return redirigir("/");
 
   return supabaseResponse;
 }

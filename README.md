@@ -55,6 +55,9 @@ nuevos de Supabase esto no es automático).
    - `supabase/migrations/0006_pagos_caja.sql` (método de pago con vuelto,
      tabla `cajas` y funciones de iniciar/cerrar caja; reaplica los GRANT)
    - `supabase/migrations/0007_presentacion.sql` (presentación tarro/bolsa)
+   - `supabase/migrations/0008_seguridad_2.sql` (endurecimiento: rol desde
+     `app_metadata`, funciones solo para usuarios autenticados, validación de
+     ventas, una sola caja abierta, filtros por fecha con índice)
 3. Ejecuta `supabase/seed.sql` para cargar el catálogo de la fábrica:
    32 productos = 4 sabores (tradicionales, gourmet, con chocolate, picantes)
    × 4 gramajes (100, 200, 250, 500 g) × tarro/bolsa. Es idempotente (solo
@@ -74,9 +77,14 @@ supabase db push          # aplica supabase/migrations en orden
 psql "TU_CONNECTION_STRING" -f supabase/seed.sql
 ```
 
-### 2.3 Crear el primer usuario administrador
-El registro público está **desactivado**: los usuarios los crea el
-administrador. Para el primer admin:
+### 2.3 Desactivar el registro público y crear el primer administrador
+Los usuarios los crea el administrador; nadie debe poder registrarse solo.
+**Desactívalo en el panel:** Authentication → Providers → Email → apaga
+**"Allow new users to sign up"** (y, si aparece, "Enable anonymous sign-ins").
+Sin esto, cualquiera con la clave publishable podría crearse una cuenta de
+vendedor.
+
+Para el primer admin:
 
 1. En el panel: **Authentication → Users → Add user** → escribe correo y
    contraseña, y marca el correo como confirmado.

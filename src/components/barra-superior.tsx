@@ -56,7 +56,7 @@ export function BarraSuperior() {
               className="inline-flex min-h-14 items-center gap-2 rounded-lg px-3 text-base font-semibold text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Settings className="h-6 w-6" aria-hidden />
-              <span className="hidden sm:inline">Administración</span>
+              <span className="sr-only sm:not-sr-only">Administración</span>
             </Link>
           )}
 
@@ -66,7 +66,7 @@ export function BarraSuperior() {
             className="inline-flex min-h-14 items-center gap-2 rounded-lg px-3 text-base font-semibold text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <LogOut className="h-6 w-6" aria-hidden />
-            <span className="hidden sm:inline">Salir</span>
+            <span className="sr-only sm:not-sr-only">Salir</span>
           </button>
         </div>
       </div>

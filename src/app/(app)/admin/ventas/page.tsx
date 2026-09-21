@@ -55,14 +55,23 @@ export default function AdminVentasPage() {
 
   useRefrescar(cargar);
 
+  const [error, setError] = useState<string | null>(null);
+
   const anular = async () => {
     if (!aAnular) return;
     setProcesando(true);
+    setError(null);
     try {
       const supabase = createClient();
-      await supabase.rpc("anular_venta", { p_venta: aAnular.id });
+      const { error: e } = await supabase.rpc("anular_venta", {
+        p_venta: aAnular.id,
+      });
+      if (e) throw e;
       setAAnular(null);
       cargar();
+    } catch (e) {
+      const msg = (e as { message?: string })?.message;
+      setError(msg ? `No se pudo anular: ${msg}` : "No se pudo anular la venta.");
     } finally {
       setProcesando(false);
     }
@@ -71,6 +80,12 @@ export default function AdminVentasPage() {
   return (
     <div className="space-y-5">
       <h1 className="text-3xl font-extrabold">Ventas y anulaciones</h1>
+
+      {error && (
+        <p role="alert" className="text-lg font-semibold text-destructive">
+          {error}
+        </p>
+      )}
 
       <ul className="space-y-3">
         {ventas.map((v) => (

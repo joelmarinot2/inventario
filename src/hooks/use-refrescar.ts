@@ -1,16 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 // Vuelve a cargar los datos al entrar a la pantalla y al volver a la ventana,
-// porque puede haber dos equipos abiertos a la vez.
+// porque puede haber dos equipos abiertos a la vez. Siempre llama a la versión
+// MÁS RECIENTE de `cargar` (así ve el estado actual, p. ej. la fecha elegida).
 export function useRefrescar(cargar: () => void) {
-  useEffect(() => {
-    cargar();
+  const ref = useRef(cargar);
+  ref.current = cargar;
 
-    const alEnfocar = () => cargar();
+  useEffect(() => {
+    ref.current();
+
+    const alEnfocar = () => ref.current();
     const alVerse = () => {
-      if (document.visibilityState === "visible") cargar();
+      if (document.visibilityState === "visible") ref.current();
     };
 
     window.addEventListener("focus", alEnfocar);
@@ -22,6 +26,5 @@ export function useRefrescar(cargar: () => void) {
       document.removeEventListener("visibilitychange", alVerse);
       window.removeEventListener("online", alEnfocar);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

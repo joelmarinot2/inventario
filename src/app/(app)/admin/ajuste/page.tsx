@@ -7,6 +7,7 @@ import { cargarProductos } from "@/lib/productos-cliente";
 import type { MotivoAjuste, Producto } from "@/lib/tipos";
 import { mostrarCantidad, formatGramos } from "@/lib/unidades";
 import { GridProductos } from "@/components/grid-productos";
+import { BotonVolver } from "@/components/boton-volver";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -105,13 +106,7 @@ function AjustarProducto({
 
   return (
     <div className="space-y-5">
-      <button
-        type="button"
-        onClick={onCancelar}
-        className="text-lg font-semibold text-primary underline"
-      >
-        ← Elegir otro producto
-      </button>
+      <BotonVolver onClick={onCancelar}>Elegir otro producto</BotonVolver>
 
       <h1 className="text-2xl font-extrabold">{producto.nombre}</h1>
 

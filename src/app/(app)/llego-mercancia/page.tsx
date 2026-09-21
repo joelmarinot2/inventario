@@ -13,6 +13,7 @@ import {
   mostrarCantidad,
 } from "@/lib/unidades";
 import { GridProductos } from "@/components/grid-productos";
+import { BotonVolver } from "@/components/boton-volver";
 import { PasoCantidad } from "@/components/paso-cantidad";
 import { TecladoNumerico } from "@/components/teclado-numerico";
 import { Button } from "@/components/ui/button";
@@ -144,13 +145,7 @@ function EntradaProducto({
 
   return (
     <div className="space-y-6">
-      <button
-        type="button"
-        onClick={onCancelar}
-        className="text-lg font-semibold text-primary underline"
-      >
-        ← Elegir otro producto
-      </button>
+      <BotonVolver onClick={onCancelar}>Elegir otro producto</BotonVolver>
 
       <h1 className="text-2xl font-extrabold">{producto.nombre}</h1>
 

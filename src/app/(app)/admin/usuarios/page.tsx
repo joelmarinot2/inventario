@@ -13,10 +13,13 @@ const estadoInicial: EstadoUsuario = { error: null, ok: null };
 
 export default function UsuariosPage() {
   const [perfiles, setPerfiles] = useState<Perfil[]>([]);
+  const [miId, setMiId] = useState<string | null>(null);
+  const [errorRol, setErrorRol] = useState<string | null>(null);
   const [estado, formAction] = useActionState(crearUsuario, estadoInicial);
 
   const cargar = () => {
     const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setMiId(data.user?.id ?? null));
     supabase
       .from("perfiles")
       .select("*")
@@ -29,8 +32,16 @@ export default function UsuariosPage() {
   }, [estado.ok]);
 
   const cambiarRol = async (id: string, rol: Rol) => {
+    setErrorRol(null);
     const supabase = createClient();
-    await supabase.from("perfiles").update({ rol }).eq("id", id);
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ rol })
+      .eq("id", id);
+    if (error) {
+      setErrorRol("No se pudo cambiar el rol. Intenta de nuevo.");
+      return;
+    }
     cargar();
   };
 
@@ -84,6 +95,11 @@ export default function UsuariosPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-bold">Usuarios actuales</h2>
+        {errorRol && (
+          <p role="alert" className="text-lg font-semibold text-destructive">
+            {errorRol}
+          </p>
+        )}
         <ul className="space-y-3">
           {perfiles.map((p) => (
             <li
@@ -98,15 +114,21 @@ export default function UsuariosPage() {
                   {p.rol === "admin" ? "Administrador" : "Vendedor"}
                 </p>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  cambiarRol(p.id, p.rol === "admin" ? "vendedor" : "admin")
-                }
-              >
-                {p.rol === "admin" ? "Hacer vendedor" : "Hacer administrador"}
-              </Button>
+              {p.id === miId ? (
+                <span className="text-base text-muted-foreground">
+                  (tú)
+                </span>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    cambiarRol(p.id, p.rol === "admin" ? "vendedor" : "admin")
+                  }
+                >
+                  {p.rol === "admin" ? "Hacer vendedor" : "Hacer administrador"}
+                </Button>
+              )}
             </li>
           ))}
         </ul>

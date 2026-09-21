@@ -10,6 +10,7 @@ import {
   agruparPorSabor,
   agruparPorGramaje,
   etiquetaPresentacion,
+  saborDe,
 } from "@/lib/agrupar";
 import type {
   ItemCarrito,
@@ -44,6 +45,8 @@ const METODOS: { valor: MetodoPago; texto: string }[] = [
   { valor: "otro", texto: "Otro" },
 ];
 
+const parseRecibido = (s: string) => parseInt(s.replace(/\D/g, ""), 10);
+
 export default function VenderPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
@@ -51,21 +54,32 @@ export default function VenderPage() {
   const [saborActual, setSaborActual] = useState<string | null>(null);
   const [gramajeActual, setGramajeActual] = useState<number | null>(null);
   const [actual, setActual] = useState<Producto | null>(null);
+  // Clave de idempotencia: protege del doble toque. Se renueva cada vez que
+  // la venta cambia (productos o forma de pago), para que una venta distinta
+  // nunca reutilice la clave de otra.
   const [clave, setClave] = useState<string>(() => crypto.randomUUID());
   const [metodo, setMetodo] = useState<MetodoPago>("efectivo");
   const [recibido, setRecibido] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [cajaAbierta, setCajaAbierta] = useState<boolean | null>(null);
   const [ventaGuardada, setVentaGuardada] = useState<{
     id: string;
     total: number;
   } | null>(null);
 
-  useRefrescar(() => {
+  const recargarProductos = () =>
     cargarProductos().then(setProductos).catch(() => {});
+
+  useRefrescar(() => {
+    recargarProductos();
     const supabase = createClient();
-    supabase.rpc("caja_abierta").then(({ data }) => setCajaAbierta(!!data));
+    supabase.rpc("caja_abierta").then(({ data, error: e }) => {
+      // Un fallo pasajero de red no debe sacar a la vendedora de una venta.
+      if (e) return;
+      setCajaAbierta((prev) => (prev && carrito.length > 0 ? prev : !!data));
+    });
   });
 
   const grupos = useMemo(() => agruparPorSabor(productos), [productos]);
@@ -73,10 +87,7 @@ export default function VenderPage() {
     () => grupos.find((g) => g.sabor === saborActual)?.items ?? [],
     [grupos, saborActual],
   );
-  const gramajes = useMemo(
-    () => agruparPorGramaje(itemsSabor),
-    [itemsSabor],
-  );
+  const gramajes = useMemo(() => agruparPorGramaje(itemsSabor), [itemsSabor]);
   const presentaciones = useMemo(
     () => gramajes.find((g) => g.gramaje === gramajeActual)?.items ?? [],
     [gramajes, gramajeActual],
@@ -100,20 +111,51 @@ export default function VenderPage() {
 
   const enCarritoGramaje = (g: number) =>
     carrito
-      .filter((it) => it.producto.gramaje_g === g && saborItem(it) === saborActual)
+      .filter(
+        (it) =>
+          it.producto.gramaje_g === g &&
+          saborDe(it.producto.nombre) === saborActual,
+      )
       .reduce((s, it) => s + it.cantidad, 0);
+
+  // Cualquier cambio en la venta renueva la clave y limpia el efectivo digitado.
+  const ventaCambio = () => {
+    setClave(crypto.randomUUID());
+    setRecibido("");
+    setError(null);
+    setAviso(null);
+  };
 
   const agregar = (item: ItemCarrito) => {
     setCarrito((c) => [...c, item]);
+    ventaCambio();
     setActual(null);
     setVista(saborActual ? "gramajes" : "resumen");
   };
 
-  const quitar = (claveItem: string) =>
+  const quitar = (claveItem: string) => {
     setCarrito((c) => c.filter((it) => it.clave !== claveItem));
+    ventaCambio();
+  };
+
+  const elegirMetodo = (m: MetodoPago) => {
+    if (m !== metodo) {
+      setMetodo(m);
+      setClave(crypto.randomUUID());
+      setRecibido("");
+      setError(null);
+    }
+  };
+
+  const recibidoNum = parseRecibido(recibido);
+  const faltaEfectivo =
+    metodo === "efectivo" &&
+    Number.isFinite(recibidoNum) &&
+    recibidoNum > 0 &&
+    recibidoNum < total;
 
   const guardarVenta = async () => {
-    if (carrito.length === 0) return;
+    if (carrito.length === 0 || faltaEfectivo) return;
     setGuardando(true);
     setError(null);
     const items: ItemVentaEntrada[] = carrito.map((it) => ({
@@ -123,7 +165,6 @@ export default function VenderPage() {
       cantidad: it.cantidad,
       valor_objetivo: it.valor_objetivo,
     }));
-    const recibidoNum = parseInt(recibido.replace(/\D/g, ""), 10);
     try {
       const supabase = createClient();
       const { data, error: e } = await supabase.rpc("registrar_venta", {
@@ -136,12 +177,22 @@ export default function VenderPage() {
             : null,
       });
       if (e) throw e;
-      const r = data as { venta_id: string; total: number };
+      const r = data as { venta_id: string; total: number; ya_existia?: boolean };
       setVentaGuardada({ id: r.venta_id, total: Number(r.total) });
+      setAviso(
+        r.ya_existia
+          ? "Esta venta ya estaba guardada (no se registró dos veces)."
+          : null,
+      );
       setVista("guardada");
-      cargarProductos().then(setProductos).catch(() => {});
+      recargarProductos();
     } catch (e) {
       const msg = (e as { message?: string })?.message;
+      // La caja se cerró (quizá desde otro celular): volver a "Primero inicia el día".
+      if (msg && msg.includes("No hay caja abierta")) {
+        setCajaAbierta(false);
+        return;
+      }
       setError(
         msg
           ? `No se pudo guardar: ${msg}`
@@ -159,12 +210,14 @@ export default function VenderPage() {
     setRecibido("");
     setVentaGuardada(null);
     setError(null);
+    setAviso(null);
     setSaborActual(null);
     setGramajeActual(null);
     setVista("sabores");
+    recargarProductos();
   };
 
-  const BotonResumen = () =>
+  const botonResumen =
     carrito.length > 0 ? (
       <Button
         size="lg"
@@ -182,7 +235,9 @@ export default function VenderPage() {
       <VentaGuardada
         total={ventaGuardada.total}
         ventaId={ventaGuardada.id}
+        aviso={aviso}
         onNueva={nuevaVenta}
+        onAnulada={recargarProductos}
       />
     );
   }
@@ -260,9 +315,10 @@ export default function VenderPage() {
                   type="button"
                   onClick={() => quitar(it.clave)}
                   aria-label={`Quitar ${it.producto.nombre}`}
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border-2 border-input hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
+                  className="flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-lg border-2 border-input text-sm font-bold text-destructive hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
                 >
-                  <Trash2 className="h-6 w-6 text-destructive" />
+                  <Trash2 className="h-6 w-6" />
+                  Quitar
                 </button>
               </li>
             ))}
@@ -284,7 +340,7 @@ export default function VenderPage() {
                 <button
                   key={m.valor}
                   type="button"
-                  onClick={() => setMetodo(m.valor)}
+                  onClick={() => elegirMetodo(m.valor)}
                   aria-pressed={metodo === m.valor}
                   className={`min-h-16 rounded-xl border-2 text-lg font-bold transition-colors duration-150 ease-out-strong ${
                     metodo === m.valor
@@ -304,7 +360,7 @@ export default function VenderPage() {
                   <button
                     type="button"
                     onClick={() => setRecibido(String(total))}
-                    className="min-h-14 flex-1 rounded-full border-2 border-input bg-background px-3 text-lg font-bold transition-colors duration-150 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
+                    className="min-h-16 flex-1 rounded-full border-2 border-input bg-background px-3 text-lg font-bold transition-colors duration-150 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
                   >
                     Pago exacto
                   </button>
@@ -313,7 +369,7 @@ export default function VenderPage() {
                       key={v}
                       type="button"
                       onClick={() => setRecibido(String(v))}
-                      className="min-h-14 flex-1 rounded-full border-2 border-input bg-background px-3 text-lg font-bold transition-colors duration-150 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
+                      className="min-h-16 flex-1 rounded-full border-2 border-input bg-background px-3 text-lg font-bold transition-colors duration-150 ease-out-strong hover:bg-accent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring"
                     >
                       {formatCOP(v)}
                     </button>
@@ -324,27 +380,21 @@ export default function VenderPage() {
                   onChange={setRecibido}
                   placeholder="O escribe el monto"
                 />
-                {(() => {
-                  const rec = parseInt(recibido.replace(/\D/g, ""), 10);
-                  if (!Number.isFinite(rec) || rec <= 0) return null;
-                  if (rec >= total) {
-                    return (
-                      <div className="rounded-xl border-2 border-ok bg-ok/10 p-4 text-center">
-                        <p className="text-lg text-muted-foreground">
-                          Devolver
-                        </p>
-                        <p className="text-4xl font-extrabold tabular-nums text-ok">
-                          {formatCOP(rec - total)}
-                        </p>
-                      </div>
-                    );
-                  }
-                  return (
-                    <p className="text-lg font-semibold text-warn">
-                      Falta {formatCOP(total - rec)}
+                {Number.isFinite(recibidoNum) && recibidoNum > 0 && (
+                  recibidoNum >= total ? (
+                    <div className="rounded-xl border-2 border-ok bg-ok/10 p-4 text-center">
+                      <p className="text-lg text-muted-foreground">Devolver</p>
+                      <p className="text-4xl font-extrabold tabular-nums text-ok">
+                        {formatCOP(recibidoNum - total)}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="rounded-lg bg-warn/10 px-4 py-3 text-lg font-semibold text-warn">
+                      Falta {formatCOP(total - recibidoNum)}. Pide el resto o
+                      corrige el monto antes de guardar.
                     </p>
-                  );
-                })()}
+                  )
+                )}
               </div>
             )}
           </div>
@@ -372,7 +422,7 @@ export default function VenderPage() {
             variant="ok"
             size="lg"
             onClick={guardarVenta}
-            disabled={guardando || carrito.length === 0}
+            disabled={guardando || carrito.length === 0 || faltaEfectivo}
           >
             {guardando ? "Guardando…" : "GUARDAR VENTA"}
           </Button>
@@ -432,7 +482,7 @@ export default function VenderPage() {
           })}
         </div>
 
-        <BotonResumen />
+        {botonResumen}
       </div>
     );
   }
@@ -483,7 +533,7 @@ export default function VenderPage() {
           })}
         </div>
 
-        <BotonResumen />
+        {botonResumen}
       </div>
     );
   }
@@ -494,7 +544,7 @@ export default function VenderPage() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-3xl font-extrabold">Vender</h1>
         {carrito.length > 0 && (
-          <Button size="sm" onClick={() => setVista("resumen")}>
+          <Button onClick={() => setVista("resumen")}>
             Ver venta ({carrito.length})
           </Button>
         )}
@@ -512,19 +562,18 @@ export default function VenderPage() {
   );
 }
 
-// Sabor de un item del carrito (para contar por gramaje dentro de un sabor).
-function saborItem(it: ItemCarrito): string {
-  return it.producto.nombre.replace(/\s*\d+\s*g.*$/i, "").trim();
-}
-
 function VentaGuardada({
   total,
   ventaId,
+  aviso,
   onNueva,
+  onAnulada,
 }: {
   total: number;
   ventaId: string;
+  aviso: string | null;
   onNueva: () => void;
+  onAnulada: () => void;
 }) {
   const [deshaciendo, setDeshaciendo] = useState(false);
   const [anulada, setAnulada] = useState(false);
@@ -540,6 +589,7 @@ function VentaGuardada({
       });
       if (e) throw e;
       setAnulada(true);
+      onAnulada();
     } catch {
       setError("No se pudo deshacer. Intenta de nuevo.");
     } finally {
@@ -564,6 +614,7 @@ function VentaGuardada({
             <p className="mt-3 text-5xl font-extrabold tabular-nums">
               {formatCOP(total)}
             </p>
+            {aviso && <p className="mt-3 text-lg text-muted-foreground">{aviso}</p>}
           </>
         )}
       </div>

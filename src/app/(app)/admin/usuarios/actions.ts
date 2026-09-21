@@ -24,7 +24,8 @@ export async function crearUsuario(
   const nombre = String(formData.get("nombre") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const rol = String(formData.get("rol") ?? "vendedor");
+  const rolPedido = String(formData.get("rol") ?? "vendedor");
+  const rol = rolPedido === "admin" ? "admin" : "vendedor";
 
   if (!email || !password) {
     return { error: "Escribe el correo y la contraseña.", ok: null };
@@ -58,11 +59,14 @@ export async function crearUsuario(
     return { error: "No tienes permiso.", ok: null };
   }
 
+  // El rol va en app_metadata: solo el servidor (service role) puede fijarlo,
+  // así un cliente no puede autoasignarse "admin". El trigger de la base lo lee.
   const { error } = await admin.auth.admin.createUser({
     email,
     password,
     email_confirm: true,
-    user_metadata: { nombre, rol },
+    user_metadata: { nombre },
+    app_metadata: { rol },
   });
 
   if (error) {
